@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.2.0 (2026-09-21)
+
+- OPC UA Sign/SignAndEncrypt policy matrix, server username auth, cert rotation API + Web UX
+- Hierarchical OPC UA browse + subscription monitor (Web + PyQt)
+- Modbus binary/ASCII analyzer tabs (Web `/modbus-diag` + PyQt)
+- Comm monitor pause/resume API; deployment docs (NSSM, clean-VM EXE QA, legacy track)
+
 ## 3.0.1 (2026-09-21)
 
 - Restore API: auto-backup before restore + `reload_config`

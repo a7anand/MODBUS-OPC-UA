@@ -80,12 +80,14 @@ class ModbusDiagnosticPage(PageBase):
         self.ascii = QTextEdit()
         self.timing = QTextEdit()
         self.exception = QTextEdit()
+        self.binary = QTextEdit()
         for label, w in (
             ("RAW HEX", self.raw_hex),
+            ("BINARY", self.binary),
+            ("ASCII", self.ascii),
             ("DECODED", self.decoded),
             ("REGISTERS", self.registers),
             ("BITS", self.bits),
-            ("ASCII", self.ascii),
             ("RESPONSE TIME", self.timing),
             ("EXCEPTION", self.exception),
         ):
@@ -120,10 +122,15 @@ class ModbusDiagnosticPage(PageBase):
         }
         try:
             result = self.api.post("/api/modbus/read", body)
-            text = json.dumps(result, indent=2)
-            self.decoded.setPlainText(text)
-            self.raw_hex.setPlainText(str(result.get("raw_hex", result.get("hex", ""))))
-            self.registers.setPlainText(str(result.get("registers", "")))
+            interp = result.get("interpretation") or {}
+            self.decoded.setPlainText(json.dumps(result, indent=2))
+            self.raw_hex.setPlainText(str(interp.get("hex", result.get("raw_hex", ""))))
+            self.binary.setPlainText("\n".join(interp.get("binary", [])))
+            self.bits.setPlainText("\n".join(interp.get("binary", [])))
+            self.ascii.setPlainText(str(interp.get("ascii", "")))
+            self.registers.setPlainText(
+                json.dumps(interp.get("decimal", result.get("registers", "")), indent=2)
+            )
             self.timing.setPlainText(str(result.get("response_time_ms", "")))
             self.exception.setPlainText(str(result.get("error", "")))
         except ApiError as exc:

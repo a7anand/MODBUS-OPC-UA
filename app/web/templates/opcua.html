@@ -1,27 +1,65 @@
 {% extends "base.html" %}
 {% block title %}OPC UA Browser{% endblock %}
 {% block content %}
-<h1>OPC UA</h1>
+<h1>OPC UA browser</h1>
 <div id="st"></div>
-<table border="1" cellpadding="4"><thead><tr><th>Browse name</th><th>NodeId</th><th></th></tr></thead><tbody id="tb"></tbody></table>
+<p>Source: <select id="source"><option value="server">Gateway server</option><option value="client">First client</option></select></p>
+<ul id="tree"></ul>
+<div id="node"></div>
+<h2>Subscription monitor</h2>
+<button id="sub-btn" disabled>Subscribe selected</button>
+<table id="subs"><thead><tr><th>NodeId</th><th>Value</th><th>Status</th><th>Time</th></tr></thead><tbody></tbody></table>
 {% endblock %}
 {% block scripts %}
 <script>
-fetch('/api/opcua/status').then(r=>r.json()).then(s=>{
-  document.getElementById('st').textContent='Server: '+JSON.stringify(s);
-});
-fetch('/api/opcua/browse').then(r=>r.json()).then(nodes=>{
-  const tb=document.getElementById('tb');
-  nodes.forEach(n=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${n.browse_name||''}</td><td><code>${n.node_id||''}</code></td>
-      <td><button data-nid="${n.node_id}">Read</button></td>`;
-    tr.querySelector('button').onclick=()=>{
-      fetch('/api/opcua/read',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({node_id:n.node_id})}).then(r=>r.json()).then(alert);
-    };
-    tb.appendChild(tr);
+let selected = null;
+const sourceEl = document.getElementById('source');
+function loadStatus(){
+  fetch('/api/opcua/status').then(r=>r.json()).then(s=>{
+    document.getElementById('st').textContent = JSON.stringify(s.security || s, null, 2);
   });
-});
+}
+async function browse(nodeId, ul){
+  const src = sourceEl.value;
+  const nodes = await fetch(`/api/opcua/browse?node_id=${encodeURIComponent(nodeId)}&source=${src}`).then(r=>r.json());
+  nodes.forEach(n=>{
+    const li = document.createElement('li');
+    li.textContent = `${n.browse_name} (${n.node_class||''})`;
+    li.dataset.node = n.node_id;
+    li.style.cursor = 'pointer';
+    li.onclick = (e)=>{
+      e.stopPropagation();
+      selected = n.node_id;
+      document.getElementById('sub-btn').disabled = false;
+      document.getElementById('node').textContent = JSON.stringify(n, null, 2);
+      if(n.node_class && n.node_class !== 'Variable' && !li.dataset.loaded){
+        const childUl = document.createElement('ul');
+        li.appendChild(childUl);
+        browse(n.node_id, childUl);
+        li.dataset.loaded = '1';
+      }
+    };
+    ul.appendChild(li);
+  });
+}
+document.getElementById('sub-btn').onclick = ()=>{
+  if(!selected) return;
+  fetch('/api/opcua/subscriptions',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({node_id:selected, source:sourceEl.value})});
+};
+function refreshSubs(){
+  fetch(`/api/opcua/subscriptions?source=${sourceEl.value}`).then(r=>r.json()).then(rows=>{
+    const tb = document.querySelector('#subs tbody');
+    tb.innerHTML='';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><code>${r.node_id}</code></td><td>${r.value}</td><td>${r.status}</td><td>${r.timestamp}</td>`;
+      tb.appendChild(tr);
+    });
+  });
+}
+loadStatus();
+browse('i=85', document.getElementById('tree'));
+setInterval(refreshSubs, 2000);
 </script>
 {% endblock %}

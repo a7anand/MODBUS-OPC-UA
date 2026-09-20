@@ -60,6 +60,7 @@ class Gateway:
         self.audit.set_store(self.store)
         self._stop_event = asyncio.Event()
         self.ua_sync: OpcUaClientSyncService | None = None
+        self.opcua_subscriptions: set[str] = set()
 
     async def load(self) -> None:
         # Flow: YAML → validated document → tag DB → Modbus/OPC UA engines → scheduler.
@@ -70,7 +71,7 @@ class Gateway:
         intervals = {g.id: g.interval_ms for g in self.doc.poll_groups}
         self.modbus = build_modbus_engine(self.doc)
         mapping = MappingEngine(self.doc, self.tags)
-        self.opcua_server = OpcUaServerEngine(self.doc, self.tags)
+        self.opcua_server = OpcUaServerEngine(self.doc, self.tags, self.certs.base)
         self.scheduler = PollScheduler(
             self.tags,
             self.modbus,
@@ -82,7 +83,9 @@ class Gateway:
         self.scheduler.set_opcua(self.opcua_server)
         self.modbus_diag = ModbusDiagnostics(self.modbus, self.comm_monitor)
         self.opcua_clients = [
-            OpcUaClientEngine(c) for c in self.doc.opcua.clients if c.enabled
+            OpcUaClientEngine(c, self.certs.base)
+            for c in self.doc.opcua.clients
+            if c.enabled
         ]
         self.ua_sync = OpcUaClientSyncService(self)
 
@@ -212,6 +215,41 @@ class Gateway:
             for sig in (signal.SIGINT, signal.SIGTERM):
                 loop.add_signal_handler(sig, self._stop_event.set)
         await self._stop_event.wait()
+
+    async def read_opcua_node(self, node_id: str, source: str = "server") -> Any:
+        if source == "client":
+            if not self.opcua_clients:
+                raise RuntimeError("No OPC UA client configured")
+            return await self.opcua_clients[0].read(node_id)
+        if self.opcua_server:
+            return await self.opcua_server.read_node(node_id)
+        raise RuntimeError("OPC UA server not available")
+
+    async def sample_opcua_subscriptions(self, source: str = "server") -> list[dict[str, Any]]:
+        from datetime import datetime, timezone
+
+        rows: list[dict[str, Any]] = []
+        for node_id in sorted(self.opcua_subscriptions):
+            try:
+                val = await self.read_opcua_node(node_id, source)
+                rows.append(
+                    {
+                        "node_id": node_id,
+                        "value": val,
+                        "status": "OK",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+            except Exception as exc:  # noqa: BLE001
+                rows.append(
+                    {
+                        "node_id": node_id,
+                        "value": None,
+                        "status": str(exc),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+        return rows
 
     def status(self) -> dict[str, Any]:
         assert self.doc

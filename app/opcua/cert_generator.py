@@ -43,3 +43,23 @@ def generate_self_signed(
     )
     cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
     return cert_path
+
+
+def rotate_self_signed(dest_dir: Path, common_name: str = "ModbusOPCUAGateway") -> dict[str, str]:
+    """Archive current own cert/key and generate a new pair (PDF §29 rotation UX)."""
+    from datetime import datetime, timezone
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    archive = dest_dir / "archive"
+    archive.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    archived: list[str] = []
+    for name in ("gateway_cert.pem", "gateway_key.pem"):
+        src = dest_dir / name
+        if src.exists():
+            dst = archive / f"{stamp}_{name}"
+            dst.write_bytes(src.read_bytes())
+            src.unlink()
+            archived.append(str(dst))
+    new_cert = generate_self_signed(dest_dir, common_name=common_name)
+    return {"certificate": str(new_cert), "archived": archived}

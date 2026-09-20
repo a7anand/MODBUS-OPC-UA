@@ -1,6 +1,6 @@
 # Version 3.0 — Master PDF completion roadmap
 
-**Release:** `3.0.1` (`app/version.py`) · baseline `3.0.0` tagged
+**Release:** `3.2.0` (`app/version.py`)
 
 | GUI | Command |
 |-----|---------|
@@ -10,7 +10,7 @@
 
 ---
 
-## Status (3.0.1)
+## Status (3.2.0)
 
 ### Core & protocols
 - [x] Poll scheduler register read batching
@@ -19,7 +19,7 @@
 - [x] TEST 2 acceptance (UA → tag `ua_bridge`)
 - [~] Modbus TCP server external master — manual / future harness
 - [x] STALE quality after repeated poll failures
-- [~] OPC UA Sign/Encrypt — cert stores + import; full policy matrix lab-only
+- [x] OPC UA Sign/Encrypt policy matrix + server users + cert rotation (`OPCUA_SECURITY.md`)
 
 ### Health & diagnostics
 - [x] CPU / memory / disk in `HealthMonitor`
@@ -47,8 +47,8 @@
 
 ### Packaging
 - [x] Phase 30 documented modern-only (`PHASE30_LEGACY.md`)
-- [~] EXE QA on clean VM — operator task
-- [~] pywin32 service — NSSM path documented
+- [x] EXE QA checklist (`WINDOWS_EXE_QA.md`)
+- [x] NSSM / scheduled task (`NSSM_SERVICE.md`); pywin32 not shipped
 
 ### Testing §45–46
 - [x] TEST 1, 4, 5, 6 (partial), 7 restore roundtrip

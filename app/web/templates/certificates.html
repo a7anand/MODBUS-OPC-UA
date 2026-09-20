@@ -4,6 +4,7 @@
 <h1>Certificates</h1>
 <pre id="list"></pre>
 <button id="gen">Generate self-signed (own/)</button>
+<button id="rot">Rotate cert (archive old)</button>
 <form id="up"><input type="file" name="file"/><select name="store"><option>trusted</option><option>own</option><option>rejected</option></select><button>Import</button></form>
 {% endblock %}
 {% block scripts %}
@@ -11,6 +12,7 @@
 function load(){fetch('/api/certificates').then(r=>r.json()).then(d=>{document.getElementById('list').textContent=JSON.stringify(d,null,2);});}
 load();
 document.getElementById('gen').onclick=()=>fetch('/api/certificates/generate',{method:'POST'}).then(r=>r.json()).then(d=>{alert(JSON.stringify(d)); load();});
+document.getElementById('rot').onclick=()=>fetch('/api/certificates/rotate',{method:'POST'}).then(r=>r.json()).then(d=>{alert(JSON.stringify(d)); load();});
 document.getElementById('up').onsubmit=async e=>{
   e.preventDefault();
   const fd=new FormData(e.target);

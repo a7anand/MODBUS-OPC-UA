@@ -13,7 +13,7 @@ class CertificateManager:
 
     def list_all(self) -> dict[str, list[dict[str, Any]]]:
         result: dict[str, list[dict[str, Any]]] = {}
-        for store in ("own", "trusted", "rejected"):
+        for store in ("own", "trusted", "rejected", "archive"):
             folder = self.base / store
             folder.mkdir(parents=True, exist_ok=True)
             items = []

@@ -7,11 +7,16 @@ import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any
 
 from asyncua import Server, ua
 
 from app.core.config_schema import GatewayDocument, OpcUaServerConfig
+from app.opcua.security_setup import (
+    apply_server_security,
+    build_password_user_manager,
+)
 from app.core.enums import DataType, OpcUaSecurityMode, TagQuality
 from app.core.tag_database import TagDatabase, TagRecord
 from app.opcua.base import OpcUaEndpoint
@@ -20,10 +25,17 @@ logger = logging.getLogger(__name__)
 
 
 class OpcUaServerEngine(OpcUaEndpoint):
-    def __init__(self, doc: GatewayDocument, tags: TagDatabase) -> None:
+    def __init__(
+        self,
+        doc: GatewayDocument,
+        tags: TagDatabase,
+        cert_base: Path | None = None,
+    ) -> None:
         self._doc = doc
         self._tags = tags
+        self._cert_base = cert_base or Path("certificates")
         self._server = Server()
+        self._security_info: dict[str, Any] = {}
         self._cfg: OpcUaServerConfig = doc.opcua.server
         self._nodes: dict[str, Any] = {}
         self._variant_types: dict[str, ua.VariantType] = {}
@@ -87,10 +99,34 @@ class OpcUaServerEngine(OpcUaEndpoint):
             self._warned_insecure = True
         last_error: OSError | None = None
         for host, port in self._bind_candidates():
-            self._server = Server()
+            user_manager = None
+            if self._cfg.username_password_auth and self._cfg.server_users:
+                rows = [
+                    (u.username, u.password, "Admin" if u.admin else "User")
+                    for u in self._cfg.server_users
+                ]
+                user_manager = build_password_user_manager(rows)
+            self._server = Server(user_manager=user_manager)
             try:
                 await self._server.init()
                 await self._server.set_application_uri(self._cfg.application_uri)
+                cert_p = (
+                    Path(self._cfg.certificate_path)
+                    if self._cfg.certificate_path
+                    else None
+                )
+                key_p = (
+                    Path(self._cfg.private_key_path)
+                    if self._cfg.private_key_path
+                    else None
+                )
+                self._security_info = await apply_server_security(
+                    self._server,
+                    self._cfg.security_mode,
+                    cert_p,
+                    key_p,
+                    self._cert_base,
+                )
                 self._server.set_endpoint(f"opc.tcp://{host}:{port}/")
                 self._server.set_server_name(self._cfg.application_name)
                 idx = await self._server.register_namespace(self._cfg.namespace_uri)
@@ -259,7 +295,16 @@ class OpcUaServerEngine(OpcUaEndpoint):
             return
         await self._write_node_value(name, rec, rec.value)
 
+    def security_status(self) -> dict[str, Any]:
+        return {
+            "security_mode": self._cfg.security_mode.value,
+            "username_password_auth": self._cfg.username_password_auth,
+            **self._security_info,
+        }
+
     async def browse(self, node_id: str = "i=85") -> list[dict[str, Any]]:
+        if self._started:
+            return await self.browse_children(node_id)
         out: list[dict[str, Any]] = []
         for name, node in self._nodes.items():
             out.append(
@@ -267,6 +312,46 @@ class OpcUaServerEngine(OpcUaEndpoint):
                     "browse_name": name,
                     "node_id": str(node.nodeid),
                     "display_name": name,
+                    "node_class": "Variable",
                 }
             )
         return out
+
+    async def browse_children(self, node_id: str = "i=85") -> list[dict[str, Any]]:
+        if not self._started:
+            return []
+        node = self._server.get_node(node_id)
+        children = await node.get_children()
+        out: list[dict[str, Any]] = []
+        for child in children:
+            bn = await child.read_browse_name()
+            try:
+                dn = await child.read_display_name()
+                display = str(dn.Text)
+            except Exception:  # noqa: BLE001
+                display = str(bn.Name)
+            try:
+                nclass = await child.read_node_class()
+                nc = nclass.name
+            except Exception:  # noqa: BLE001
+                nc = ""
+            entry: dict[str, Any] = {
+                "browse_name": str(bn.Name),
+                "node_id": str(child.nodeid),
+                "display_name": display,
+                "node_class": nc,
+            }
+            if nc == "Variable":
+                try:
+                    entry["value"] = await child.read_value()
+                    entry["datatype"] = str(await child.read_data_type_as_variant_type())
+                except Exception:  # noqa: BLE001
+                    pass
+            out.append(entry)
+        return out
+
+    async def read_node(self, node_id: str) -> Any:
+        if not self._started:
+            raise RuntimeError("server not started")
+        node = self._server.get_node(node_id)
+        return await node.read_value()

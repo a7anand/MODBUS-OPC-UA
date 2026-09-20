@@ -2,7 +2,9 @@
 {% block title %}Diagnostics{% endblock %}
 {% block content %}
 <h1>Communication monitor</h1>
-<p><a href="/traffic">Open Modbus hex traffic view</a></p>
+<p><a href="/traffic">Modbus hex traffic</a> · <a href="/modbus-diag">Binary/ASCII analyzer</a></p>
+<button type="button" id="pause">Pause capture</button>
+<button type="button" id="resume">Resume</button>
 <table id="comm"><thead><tr>
   <th>Time</th><th>Device</th><th>Tag</th><th>Value</th><th>Op</th><th>Addr</th><th>Result</th><th>ms</th>
 </tr></thead><tbody></tbody></table>
@@ -31,6 +33,8 @@ function renderRows(rows) {
 function refresh() {
   fetch('/api/communication?limit=80').then(r => r.json()).then(renderRows);
 }
+document.getElementById('pause').onclick=()=>fetch('/api/communication/pause',{method:'POST'});
+document.getElementById('resume').onclick=()=>fetch('/api/communication/resume',{method:'POST'});
 refresh();
 setInterval(refresh, LIVE_TAG_POLL_MS);
 </script>

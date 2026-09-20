@@ -21,6 +21,8 @@ from app.core.mapping_feedback import validate_mappings
 from app.api.websocket import router as ws_router
 
 from app.utils.runtime_paths import app_root, bundle_dir, is_frozen
+from app.version import __version__
+from app.opcua.security_setup import SECURITY_POLICY_MATRIX
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 if not (WEB_DIR / "templates").is_dir():
@@ -53,13 +55,18 @@ class OpcUaWriteBody(OpcUaReadBody):
     value: Any
 
 
+class OpcUaSubscribeBody(BaseModel):
+    node_id: str
+    source: str = "server"
+
+
 class LoginBody(BaseModel):
     username: str = ""
     password: str = ""
 
 
 def create_app(gateway: Gateway) -> FastAPI:
-    app = FastAPI(title="Modbus OPC UA Gateway API", version="3.0.0")
+    app = FastAPI(title="Modbus OPC UA Gateway API", version=__version__)
     templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
     static_path = WEB_DIR / "static"
     if static_path.is_dir():
@@ -114,6 +121,10 @@ def create_app(gateway: Gateway) -> FastAPI:
     @app.get("/traffic", response_class=HTMLResponse)
     async def page_traffic(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(request, "traffic.html", {})
+
+    @app.get("/modbus-diag", response_class=HTMLResponse)
+    async def page_modbus_diag(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "modbus_diag.html", {})
 
     @app.get("/polling", response_class=HTMLResponse)
     async def page_polling(request: Request) -> HTMLResponse:
@@ -186,12 +197,19 @@ def create_app(gateway: Gateway) -> FastAPI:
     @app.get("/api/opcua/status")
     async def opcua_status() -> dict[str, Any]:
         server = gateway.opcua_server
+        sec = server.security_status() if server else {}
         return {
             "server_enabled": gateway.doc.opcua.server.enabled if gateway.doc else False,
             "server_running": bool(server and server.started),
             "server_endpoint": server.bound_endpoint if server else None,
             "clients": [c.config.name for c in gateway.opcua_clients],
+            "security": sec,
+            "policy_matrix": SECURITY_POLICY_MATRIX,
         }
+
+    @app.get("/api/opcua/security-matrix")
+    async def opcua_security_matrix() -> list[dict[str, str]]:
+        return SECURITY_POLICY_MATRIX
 
     @app.get("/api/events")
     async def api_events() -> list[dict[str, Any]]:
@@ -282,10 +300,29 @@ def create_app(gateway: Gateway) -> FastAPI:
         return {"ok": True, "pre_restore_backup": str(pre)}
 
     @app.get("/api/opcua/browse")
-    async def api_opcua_browse() -> list[dict[str, Any]]:
+    async def api_opcua_browse(
+        node_id: str = "i=85",
+        source: str = "server",
+    ) -> list[dict[str, Any]]:
+        if source == "client" and gateway.opcua_clients:
+            return await gateway.opcua_clients[0].browse(node_id)
         if gateway.opcua_server:
-            return await gateway.opcua_server.browse()
+            return await gateway.opcua_server.browse(node_id)
         return []
+
+    @app.get("/api/opcua/subscriptions")
+    async def api_opcua_subscriptions(source: str = "server") -> list[dict[str, Any]]:
+        return await gateway.sample_opcua_subscriptions(source)
+
+    @app.post("/api/opcua/subscriptions")
+    async def api_opcua_subscribe(body: OpcUaSubscribeBody) -> dict[str, Any]:
+        gateway.opcua_subscriptions.add(body.node_id)
+        return {"ok": True, "node_id": body.node_id}
+
+    @app.delete("/api/opcua/subscriptions")
+    async def api_opcua_unsubscribe(node_id: str) -> dict[str, Any]:
+        gateway.opcua_subscriptions.discard(node_id)
+        return {"ok": True}
 
     @app.post("/api/modbus/read")
     async def api_modbus_read(
@@ -333,6 +370,20 @@ def create_app(gateway: Gateway) -> FastAPI:
             raise HTTPException(403, "Forbidden")
         gateway.comm_monitor.clear()
         return {"ok": True}
+
+    @app.post("/api/communication/pause")
+    async def api_comm_pause(user: str = Depends(_session)) -> dict[str, Any]:
+        if gateway.authz and not gateway.authz.can_write(user):
+            raise HTTPException(403, "Forbidden")
+        gateway.comm_monitor.pause()
+        return {"ok": True, "paused": True}
+
+    @app.post("/api/communication/resume")
+    async def api_comm_resume(user: str = Depends(_session)) -> dict[str, Any]:
+        if gateway.authz and not gateway.authz.can_write(user):
+            raise HTTPException(403, "Forbidden")
+        gateway.comm_monitor.resume()
+        return {"ok": True, "paused": False}
 
     @app.get("/api/trends")
     async def api_trends() -> dict[str, Any]:

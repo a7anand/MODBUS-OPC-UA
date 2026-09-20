@@ -90,6 +90,14 @@ class ModbusSection(BaseModel):
     devices: list[ModbusDeviceConfig] = Field(default_factory=list)
 
 
+class OpcUaServerUser(BaseModel):
+    """OPC UA username/password (distinct from REST security.users hashes)."""
+
+    username: str
+    password: str
+    admin: bool = False
+
+
 class OpcUaServerConfig(BaseModel):
     enabled: bool = True
     # Use 127.0.0.1 and a non-default port on Windows: 4840 is often blocked (WinError 10013).
@@ -100,6 +108,8 @@ class OpcUaServerConfig(BaseModel):
     security_mode: OpcUaSecurityMode = OpcUaSecurityMode.NONE
     certificate_path: str | None = None
     private_key_path: str | None = None
+    username_password_auth: bool = False
+    server_users: list[OpcUaServerUser] = Field(default_factory=list)
 
 
 class OpcUaClientSubscription(BaseModel):

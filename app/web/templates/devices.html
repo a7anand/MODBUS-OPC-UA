@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Modbus Devices{% endblock %}
+{% block content %}
+<h1>Modbus devices</h1>
+<p class="hint">Add TCP/RTU clients, TCP/RTU servers, or simulators. Changes save to <code>config/gateway.yaml</code> and reload engines.</p>
+<div id="msg" class="msg"></div>
+<table id="dev-table"><thead><tr>
+  <th>Name</th><th>Mode</th><th>Host / Port</th><th>Polling</th><th></th>
+</tr></thead><tbody></tbody></table>
+
+<h2>Add device</h2>
+<form id="dev-form" class="form-grid">
+  <label>Name <input name="name" required placeholder="PLC01"/></label>
+  <label>Mode
+    <select name="mode">
+      <option value="tcp_client">tcp_client (poll external slave)</option>
+      <option value="tcp_server">tcp_server (gateway as slave)</option>
+      <option value="rtu_client">rtu_client</option>
+      <option value="rtu_server">rtu_server</option>
+      <option value="simulator">simulator</option>
+    </select>
+  </label>
+  <label>Host <input name="host" value="192.168.1.10"/></label>
+  <label>Port <input name="port" type="number" value="502"/></label>
+  <label>Unit ID <input name="unit_id" type="number" value="1"/></label>
+  <label>Serial (RTU) <input name="serial_port" value="COM3"/></label>
+  <label>Address base
+    <select name="address_base"><option value="one">one (40001)</option><option value="zero">zero</option></select>
+  </label>
+  <label><input type="checkbox" name="enabled" checked/> Enable Modbus polling for this device</label>
+  <button type="submit">Add device</button>
+</form>
+
+<dialog id="dev-edit-dialog">
+  <h2>Edit device</h2>
+  <form id="dev-edit-form" class="form-grid" method="dialog">
+    <label>Name <input name="name" required/></label>
+    <label>Mode
+      <select name="mode">
+        <option value="tcp_client">tcp_client</option>
+        <option value="tcp_server">tcp_server</option>
+        <option value="rtu_client">rtu_client</option>
+        <option value="rtu_server">rtu_server</option>
+        <option value="simulator">simulator</option>
+      </select>
+    </label>
+    <label>Host <input name="host"/></label>
+    <label>Port <input name="port" type="number"/></label>
+    <label>Unit ID <input name="unit_id" type="number"/></label>
+    <label>Serial <input name="serial_port"/></label>
+    <label>Address base
+      <select name="address_base"><option value="one">one</option><option value="zero">zero</option></select>
+    </label>
+    <label><input type="checkbox" name="enabled"/> Enable Modbus polling (connect &amp; poll tags on this device)</label>
+    <div style="grid-column:1/-1;display:flex;gap:0.5rem;">
+      <button type="submit">Save</button>
+      <button type="button" id="dev-edit-cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script>
+loadDevices();
+document.getElementById('dev-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const body = deviceBodyFromForm(f);
+  try {
+    await apiPost('/api/config/modbus/devices', body);
+    showMsg('Device added and configuration reloaded.');
+    f.reset();
+    if (f.enabled) f.enabled.checked = true;
+    loadDevices();
+  } catch (err) { showMsg(err.message, true); }
+});
+document.getElementById('dev-edit-cancel').addEventListener('click', () => {
+  document.getElementById('dev-edit-dialog').close();
+});
+document.getElementById('dev-edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const original = f.dataset.originalName;
+  const body = deviceBodyFromForm(f);
+  try {
+    await apiPut('/api/config/modbus/devices/' + encodeURIComponent(original), body);
+    showMsg('Device updated.');
+    document.getElementById('dev-edit-dialog').close();
+    loadDevices();
+  } catch (err) { showMsg(err.message, true); }
+});
+</script>
+{% endblock %}

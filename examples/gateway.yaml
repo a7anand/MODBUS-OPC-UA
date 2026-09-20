@@ -1,0 +1,32 @@
+gateway:
+  name: BKPL-GATEWAY-01
+  mode: production
+web:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  remote_enabled: false
+logging:
+  level: INFO
+poll_groups:
+  - id: default
+    interval_ms: 1000
+modbus:
+  devices:
+    - name: SIM_PLC
+      mode: simulator
+      address_base: one
+opcua:
+  server:
+    enabled: true
+    endpoint: opc.tcp://127.0.0.1:4840
+tags:
+  - name: demo_tag
+    device: SIM_PLC
+    function: 3
+    address: 40001
+    datatype: uint16
+    poll_group: default
+mappings: []
+security:
+  require_auth: false

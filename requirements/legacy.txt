@@ -1,0 +1,16 @@
+# Legacy track — Python 3.8 / Windows 7 SP1 / Server 2008 R2 (Phase 30)
+# STATUS: NOT VALIDATED ON TARGET OS. Do not claim support until Phase 30 test log is filled.
+# Install in isolated venv only: py -3.8 -m venv .venv-legacy
+
+# Python 3.8 maximum pins (indicative — adjust after hardware test)
+asyncua>=1.0.0,<2
+pymodbus>=2.5.0,<3
+pydantic>=1.10,<2
+PyYAML>=6.0
+pyserial>=3.5
+# PyQt5 5.15.x last builds with Qt5 on Win7
+PyQt5>=5.15,<5.16
+# FastAPI 0.95 + uvicorn 0.22 often used on 3.8; modern code may need backports
+fastapi>=0.95,<0.100
+uvicorn>=0.22,<0.30
+websockets>=10.0

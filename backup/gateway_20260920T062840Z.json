@@ -1,0 +1,7 @@
+{
+  "timestamp": "20260920T062840Z",
+  "user": "anonymous",
+  "description": "update tag bool1 -> f32",
+  "source": "config\\gateway.yaml",
+  "checksum": "6c293163ae785f0723887c6d8ab196dccdb185eaf469f8deaea1cd9b1395ca20"
+}

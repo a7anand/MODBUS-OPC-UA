@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ gateway }} — Dashboard{% endblock %}
+{% block content %}
+<header><h1>{{ gateway }}</h1><p id="status">Loading live data…</p></header>
+<section>
+  <h2>Tags</h2>
+  <table id="tags"><thead><tr><th>Name</th><th>Device</th><th>Value</th><th>Quality</th><th>Trend</th></tr></thead><tbody></tbody></table>
+</section>
+<section>
+  <h2>Events</h2>
+  <ul id="events"></ul>
+</section>
+<p class="hint">Full charts: <a href="/trends">Trends</a> · Modbus hex: <a href="/traffic">Traffic</a></p>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/app.js"></script>
+{% endblock %}

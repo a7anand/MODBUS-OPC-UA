@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Import tags{% endblock %}
+{% block content %}
+<h1>Import tags (CSV / Excel)</h1>
+<p class="hint">Use the same columns as <a href="/examples/tags_import_template.csv">tags_import_template.csv</a> (saved under <code>examples/</code> in the project).</p>
+<div id="msg" class="msg"></div>
+
+<h2>Upload file</h2>
+<form id="upload-form">
+  <input type="file" name="file" accept=".csv,.xlsx,.xlsm,.txt" required/>
+  <button type="submit">Preview import</button>
+</form>
+
+<h2>Or paste CSV</h2>
+<textarea id="csv-text" rows="8" placeholder="TagName,Device,Function,Address,..."></textarea>
+<button id="preview-paste">Preview pasted CSV</button>
+
+<h2>Preview</h2>
+<pre id="preview"></pre>
+<ul id="errors"></ul>
+<label><input type="checkbox" id="replace-existing"/> Update existing tags with same name</label>
+<button id="commit-btn" disabled>Commit import to gateway</button>
+{% endblock %}
+{% block scripts %}
+<script>
+let lastPreview = null;
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const file = e.target.file.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/config/tags/import/preview-file', { method: 'POST', body: fd });
+  const data = await r.json();
+  if (!r.ok) { showMsg(data.detail || 'Preview failed', true); return; }
+  lastPreview = data;
+  showPreview(data);
+});
+document.getElementById('preview-paste').addEventListener('click', async () => {
+  const content = document.getElementById('csv-text').value;
+  const data = await apiPost('/api/config/tags/import/preview', { content });
+  lastPreview = data;
+  showPreview(data);
+});
+document.getElementById('commit-btn').addEventListener('click', async () => {
+  if (!lastPreview || !lastPreview.valid_tags) return;
+  const replace = document.getElementById('replace-existing').checked;
+  const data = await apiPost('/api/config/tags/import/commit', { replace_existing: replace });
+  showMsg('Import committed: ' + JSON.stringify(data.stats));
+  document.getElementById('commit-btn').disabled = true;
+});
+function showPreview(data) {
+  document.getElementById('preview').textContent = JSON.stringify(data.preview, null, 2);
+  const ul = document.getElementById('errors');
+  ul.innerHTML = '';
+  (data.errors || []).forEach(e => { const li = document.createElement('li'); li.textContent = e; ul.appendChild(li); });
+  document.getElementById('commit-btn').disabled = !(data.valid_tags > 0);
+  showMsg('Valid tags: ' + data.valid_tags + ' / rows: ' + data.row_count);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Tags{% endblock %}
+{% block content %}
+<h1>Tags</h1>
+<div id="msg" class="msg"></div>
+<table id="tag-table"><thead><tr>
+  <th>Name</th><th>Device</th><th>Address</th><th>Datatype</th><th>Value</th><th>Quality</th><th></th>
+</tr></thead><tbody></tbody></table>
+
+<h2>Add tag</h2>
+<form id="tag-form" class="form-grid">
+  <label>Tag name <input name="name" required placeholder="tank_level"/></label>
+  <label>Device <input name="device" required placeholder="PLC01" list="device-names"/></label>
+  <datalist id="device-names"></datalist>
+  <label>Modbus function
+    <select name="function">
+      <option value="3">3 — Holding registers</option>
+      <option value="4">4 — Input registers</option>
+      <option value="1">1 — Coils</option>
+      <option value="2">2 — Discrete inputs</option>
+    </select>
+  </label>
+  <label>Address (PLC style e.g. 40001) <input name="address" type="number" required value="40001"/></label>
+  <label>Register count <input name="register_count" type="number" value="1"/></label>
+  <label>Datatype
+    <select name="datatype">
+      <option>uint16</option><option>int16</option><option>float32</option>
+      <option>bool</option><option>uint32</option><option>int32</option>
+    </select>
+  </label>
+  <label>Gain <input name="gain" type="number" step="any" value="1"/></label>
+  <label>Offset <input name="offset" type="number" step="any" value="0"/></label>
+  <label>Engineering unit <input name="engineering_unit" placeholder="°C"/></label>
+  <label>Poll group <select name="poll_group"></select></label>
+  <label><input type="checkbox" name="writable"/> Writable from OPC UA (writes to Modbus)</label>
+  <button type="submit">Add tag</button>
+</form>
+<p><a href="/import">Import many tags from CSV / Excel</a></p>
+
+<dialog id="tag-edit-dialog">
+  <h2>Edit tag</h2>
+  <form id="tag-edit-form" class="form-grid" method="dialog">
+    <label>Tag name <input name="name" required/></label>
+    <label>Device <input name="device" required list="device-names"/></label>
+    <label>Modbus function
+      <select name="function">
+        <option value="3">3 — Holding</option>
+        <option value="4">4 — Input</option>
+        <option value="1">1 — Coils</option>
+        <option value="2">2 — Discrete</option>
+      </select>
+    </label>
+    <label>Address <input name="address" type="number" required/></label>
+    <label>Register count <input name="register_count" type="number"/></label>
+    <label>Datatype
+      <select name="datatype">
+        <option>uint16</option><option>int16</option><option>float32</option>
+        <option>bool</option><option>uint32</option><option>int32</option>
+      </select>
+    </label>
+    <label>Gain <input name="gain" type="number" step="any"/></label>
+    <label>Offset <input name="offset" type="number" step="any"/></label>
+    <label>Engineering unit <input name="engineering_unit"/></label>
+    <label>Poll group <select name="poll_group"></select></label>
+    <label><input type="checkbox" name="enabled" checked/> Enabled</label>
+    <label><input type="checkbox" name="writable"/> Writable from OPC UA</label>
+    <div style="grid-column: 1 / -1; display:flex; gap:0.5rem;">
+      <button type="submit" value="save">Save</button>
+      <button type="button" id="tag-edit-cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script>
+loadDeviceNames('device-names');
+loadPollGroupOptions(document.querySelector('#tag-form select[name="poll_group"]'));
+loadTagDefinitions();
+refreshLiveTags();
+document.getElementById('tag-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = tagBodyFromForm(e.target);
+  try {
+    await apiPost('/api/config/tags/definitions', body);
+    showMsg('Tag added.');
+    e.target.reset();
+    loadPollGroupOptions(document.querySelector('#tag-form select[name="poll_group"]'));
+    loadTagDefinitions();
+  } catch (err) { showMsg(err.message, true); }
+});
+document.getElementById('tag-edit-cancel').addEventListener('click', () => {
+  document.getElementById('tag-edit-dialog').close();
+});
+document.getElementById('tag-edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const original = f.dataset.originalName;
+  const body = tagBodyFromForm(f);
+  try {
+    await apiPut('/api/config/tags/definitions/' + encodeURIComponent(original), body);
+    showMsg('Tag updated.');
+    document.getElementById('tag-edit-dialog').close();
+    loadTagDefinitions();
+  } catch (err) { showMsg(err.message, true); }
+});
+</script>
+{% endblock %}

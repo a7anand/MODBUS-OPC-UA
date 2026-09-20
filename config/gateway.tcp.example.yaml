@@ -1,0 +1,32 @@
+# Example: Modbus TCP device (replace host with your PLC IP)
+
+opcua:
+  endpoint_port: 4840
+
+health:
+  port: 8091
+
+poll_groups:
+  - id: default
+    interval_ms: 1000
+
+modbus_connections:
+  - id: plc1
+    transport: tcp
+    tcp:
+      host: "192.168.1.10"
+      port: 502
+    request_timeout_sec: 2.0
+
+tags:
+  - id: motor_speed
+    connection_id: plc1
+    device_name: Line1
+    unit_id: 1
+    modbus_address: 40001
+    data_type: float32
+    length_registers: 2
+    byte_order: big
+    scale: 1.0
+    description: "Main drive speed (RPM)"
+    poll_group: default

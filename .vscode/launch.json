@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Gateway (config/gateway.yaml)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "gateway",
+      "args": ["-c", "config/gateway.yaml"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

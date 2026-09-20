@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Polling{% endblock %}
+{% block content %}
+<h1>Poll groups</h1>
+<p class="hint">Tags reference a poll group (<code>default</code>, <code>fast</code>, or custom). Interval is the scan period for all tags in that group.</p>
+<div id="msg" class="msg"></div>
+<table id="poll-table"><thead><tr><th>Group ID</th><th>Interval (ms)</th><th></th></tr></thead><tbody></tbody></table>
+<h2>Add group</h2>
+<form id="poll-form" class="form-grid">
+  <label>Group id <input name="id" required placeholder="slow"/></label>
+  <label>Interval ms <input name="interval_ms" type="number" min="50" value="2000"/></label>
+  <button type="submit">Add</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadPollGroups() {
+  const groups = await apiGet('/api/config/poll-groups');
+  const tb = document.querySelector('#poll-table tbody');
+  tb.innerHTML = '';
+  groups.forEach(g => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${g.id}</td><td><input type="number" min="50" data-id="${g.id}" value="${g.interval_ms}"/></td>` +
+      `<td><button type="button" data-save="${g.id}">Save</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('button[data-save]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.save;
+      const input = tb.querySelector(`input[data-id="${id}"]`);
+      try {
+        await apiPut('/api/config/poll-groups/' + encodeURIComponent(id), {
+          interval_ms: parseInt(input.value, 10),
+        });
+        showMsg('Saved ' + id);
+      } catch (e) { showMsg(e.message, true); }
+    });
+  });
+}
+document.getElementById('poll-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    await apiPost('/api/config/poll-groups', {
+      id: f.id.value.trim(),
+      interval_ms: parseInt(f.interval_ms.value, 10),
+    });
+    showMsg('Poll group added.');
+    f.reset();
+    loadPollGroups();
+  } catch (err) { showMsg(err.message, true); }
+});
+loadPollGroups();
+</script>
+{% endblock %}

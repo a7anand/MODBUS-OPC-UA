@@ -1,0 +1,109 @@
+gateway:
+  mode: production
+  name: BKPL-GATEWAY-01
+logging:
+  json_logs: false
+  level: INFO
+mappings: []
+modbus:
+  devices:
+  - address_base: one
+    baudrate: 9600
+    bytesize: 8
+    connect_timeout_sec: 3.0
+    enabled: true
+    host: 127.0.0.1
+    keepalive: true
+    max_registers_per_request: 125
+    mode: tcp_client
+    name: SIm2
+    parity: N
+    port: 502
+    reconnect_interval_sec: 5.0
+    response_timeout_sec: 1.0
+    retries: 3
+    retry_delay_sec: 0.5
+    serial_port: COM3
+    stopbits: 1
+    unit_id: 1
+opcua:
+  clients: []
+  server:
+    application_name: Modbus OPC UA Gateway
+    application_uri: urn:modbus-opcua-gateway:server
+    certificate_path: null
+    enabled: false
+    endpoint: opc.tcp://127.0.0.1:14841
+    namespace_uri: urn:modbus-opcua-gateway:tags
+    private_key_path: null
+    security_mode: none
+poll_groups:
+- id: default
+  interval_ms: 1000
+  priority: 5
+- id: fast
+  interval_ms: 500
+  priority: 5
+security:
+  require_auth: false
+  users: []
+tags:
+- address: 40001
+  address_display: 40001
+  address_internal: 0
+  area: holding_register
+  byte_order: ABCD
+  clamp: false
+  datatype: uint16
+  deadband: 0.0
+  description: ''
+  device: SIm2
+  direction: mb_to_ua
+  enabled: true
+  engineering_unit: ''
+  function: 3
+  gain: 1.0
+  maximum: null
+  minimum: null
+  name: tl
+  offset: 0.0
+  opcua_node: s=SIm2/tl
+  poll_group: default
+  poll_interval_ms: null
+  protocol: MODBUS_TCP
+  register_count: 3
+  unit_id: 1
+  word_order: big
+  writable: false
+- address: 40002
+  address_display: 40002
+  address_internal: 1
+  area: holding_register
+  byte_order: ABCD
+  clamp: false
+  datatype: uint16
+  deadband: 0.0
+  description: ''
+  device: SIm2
+  direction: mb_to_ua
+  enabled: true
+  engineering_unit: ''
+  function: 3
+  gain: 1.0
+  maximum: null
+  minimum: null
+  name: th2
+  offset: 0.0
+  opcua_node: s=SIm2/th2
+  poll_group: default
+  poll_interval_ms: null
+  protocol: MODBUS_TCP
+  register_count: 1
+  unit_id: 1
+  word_order: big
+  writable: false
+web:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  remote_enabled: false

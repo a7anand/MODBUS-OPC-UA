@@ -1,0 +1,8 @@
+gateway:
+  name: BKPL-GATEWAY-01
+  mode: production
+web:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  remote_enabled: false

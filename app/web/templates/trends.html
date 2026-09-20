@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Trends{% endblock %}
+{% block content %}
+<h1>Tag trends</h1>
+<p class="hint">Rolling in-memory history (last ~5 minutes). Refreshes about every 750 ms.</p>
+<label>Tag
+  <select id="tag-select"></select>
+</label>
+<p id="live-val" class="hint"></p>
+<canvas id="main-chart" height="120"></canvas>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/live.js"></script>
+<script>
+let chart;
+let selectedTag = '';
+async function refresh() {
+  const name = document.getElementById('tag-select').value;
+  if (!name) return;
+  selectedTag = name;
+  const [series, live] = await Promise.all([
+    fetch('/api/trends/' + encodeURIComponent(name) + '?limit=300').then(r => r.json()),
+    fetchLiveTags(),
+  ]);
+  const cur = live.find(t => t.name === name);
+  document.getElementById('live-val').textContent = cur
+    ? 'Current: ' + cur.value + ' (' + cur.quality + ')'
+    : '';
+  const labels = series.map(p => p.t.slice(11, 19));
+  const values = series.map(p => p.v);
+  if (!chart) {
+    chart = new Chart(document.getElementById('main-chart'), {
+      type: 'line',
+      data: { labels, datasets: [{ label: name, data: values, borderColor: '#8ab4f8', tension: 0.2 }] },
+      options: { animation: false, scales: { x: { ticks: { maxTicksLimit: 12 } } } },
+    });
+  } else {
+    chart.data.labels = labels;
+    chart.data.datasets[0].label = name;
+    chart.data.datasets[0].data = values;
+    chart.update('none');
+  }
+}
+(async () => {
+  const tags = await fetchLiveTags();
+  const sel = document.getElementById('tag-select');
+  tags.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.name; o.textContent = t.name;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', refresh);
+  if (tags.length) refresh();
+  setInterval(refresh, LIVE_TAG_POLL_MS);
+})();
+</script>
+{% endblock %}

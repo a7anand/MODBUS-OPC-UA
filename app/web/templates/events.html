@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+{% block content %}
+<h1>Events</h1>
+<ul id="ev-list"></ul>
+{% endblock %}
+{% block scripts %}
+<script>
+fetch('/api/events').then(r=>r.json()).then(ev=>{
+  const ul=document.getElementById('ev-list');
+  ev.forEach(e=>{
+    const li=document.createElement('li');
+    li.textContent=`${e.timestamp} [${e.severity}] ${e.message}`;
+    ul.appendChild(li);
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Modbus traffic{% endblock %}
+{% block content %}
+<h1>Modbus Tx / Rx (PDU hex)</h1>
+<p class="hint">Synthetic PDU bytes (unit + function + data). TCP MBAP header is not shown. Pause capture from Diagnostics if needed.</p>
+<button type="button" id="clear-btn">Clear buffer</button>
+<table id="traffic"><thead><tr>
+  <th>Time</th><th>Device</th><th>Tag</th><th>Addr</th><th>Result</th><th>Tx (hex)</th><th>Rx (hex)</th>
+</tr></thead><tbody></tbody></table>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadTraffic() {
+  const rows = await fetch('/api/communication?limit=100').then(r => r.json());
+  const tb = document.querySelector('#traffic tbody');
+  tb.innerHTML = '';
+  rows.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.timestamp}</td><td>${c.device}</td><td>${c.tag_name || ''}</td>` +
+      `<td>${c.address ?? ''}</td><td>${c.result}</td>` +
+      `<td class="hex">${c.tx_hex || ''}</td><td class="hex">${c.rx_hex || ''}</td>`;
+    tb.appendChild(tr);
+  });
+}
+document.getElementById('clear-btn').addEventListener('click', async () => {
+  await fetch('/api/communication/clear', { method: 'POST' });
+  loadTraffic();
+});
+loadTraffic();
+setInterval(loadTraffic, 1500);
+</script>
+{% endblock %}

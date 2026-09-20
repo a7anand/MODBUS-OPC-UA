@@ -1,0 +1,59 @@
+gateway:
+  mode: production
+  name: BKPL-GATEWAY-01
+logging:
+  level: INFO
+mappings: []
+modbus:
+  devices:
+  - address_base: one
+    enabled: true
+    mode: simulator
+    name: SIM_PLC
+    unit_id: 1
+opcua:
+  clients: []
+  server:
+    application_name: Modbus OPC UA Gateway
+    application_uri: urn:modbus-opcua-gateway:server
+    enabled: false
+    endpoint: opc.tcp://127.0.0.1:14841
+    namespace_uri: urn:modbus-opcua-gateway:tags
+    security_mode: none
+poll_groups:
+- id: default
+  interval_ms: 1000
+- id: fast
+  interval_ms: 500
+security:
+  require_auth: false
+  users: []
+tags:
+- address: 40001
+  datatype: int16
+  description: Boiler outlet temperature (simulated)
+  device: SIM_PLC
+  engineering_unit: "\xB0C"
+  function: 3
+  gain: 0.01
+  name: boiler_temp
+  opcua_node: s=SIM_PLC/boiler_temp
+  poll_group: fast
+  protocol: MODBUS_TCP
+  register_count: 1
+  unit_id: 1
+- address: 1
+  datatype: bool
+  description: Circulation pump
+  device: SIM_PLC
+  function: 1
+  name: pump_running
+  opcua_node: s=SIM_PLC/pump_running
+  poll_group: default
+  register_count: 1
+  unit_id: 1
+web:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  remote_enabled: false

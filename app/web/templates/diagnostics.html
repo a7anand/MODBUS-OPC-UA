@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Diagnostics{% endblock %}
+{% block content %}
+<h1>Communication monitor</h1>
+<p><a href="/traffic">Open Modbus hex traffic view</a></p>
+<table id="comm"><thead><tr>
+  <th>Time</th><th>Device</th><th>Tag</th><th>Value</th><th>Op</th><th>Addr</th><th>Result</th><th>ms</th>
+</tr></thead><tbody></tbody></table>
+<h2>Modbus read test</h2>
+<p>POST <code>/api/modbus/read</code> with JSON body: device, unit_id, area, address, count</p>
+{% endblock %}
+{% block scripts %}
+<script src="/static/live.js"></script>
+<script>
+function formatCommValue(v) {
+  if (v == null) return '';
+  if (Array.isArray(v)) return v.join(', ');
+  return String(v);
+}
+function renderRows(rows) {
+  const tb = document.querySelector('#comm tbody');
+  tb.innerHTML = '';
+  rows.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.timestamp}</td><td>${c.device}</td><td>${c.tag_name || ''}</td>` +
+      `<td>${formatCommValue(c.value)}</td><td>${c.operation}</td><td>${c.address ?? ''}</td>` +
+      `<td>${c.result}</td><td>${c.response_time_ms}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function refresh() {
+  fetch('/api/communication?limit=80').then(r => r.json()).then(renderRows);
+}
+refresh();
+setInterval(refresh, LIVE_TAG_POLL_MS);
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Tag history{% endblock %}
+{% block content %}
+<h1>Tag history (last 5 minutes)</h1>
+<p class="hint">In-memory buffer only. Select device and tag, then refresh or leave auto-refresh on.</p>
+<div class="form-grid" style="max-width:720px;">
+  <label>Device
+    <select id="hist-device"><option value="">All devices</option></select>
+  </label>
+  <label>Tag
+    <select id="hist-tag"><option value="">Select tag</option></select>
+  </label>
+</div>
+<table id="hist-table"><thead><tr>
+  <th>Time (UTC)</th><th>Device</th><th>Tag</th><th>Value</th><th>Raw (byte order)</th>
+</tr></thead><tbody></tbody></table>
+{% endblock %}
+{% block scripts %}
+<script src="/static/live.js"></script>
+<script>
+async function loadFilters() {
+  const devices = await apiGet('/api/config/modbus/devices');
+  const tags = await apiGet('/api/config/tags/definitions');
+  const devSel = document.getElementById('hist-device');
+  const tagSel = document.getElementById('hist-tag');
+  devices.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.name; o.textContent = d.name;
+    devSel.appendChild(o);
+  });
+  function fillTags() {
+    const dev = devSel.value;
+    tagSel.innerHTML = '<option value="">Select tag</option>';
+    tags.filter(t => !dev || t.device === dev).forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.name; o.textContent = t.name + ' (' + t.device + ')';
+      tagSel.appendChild(o);
+    });
+  }
+  devSel.addEventListener('change', () => { fillTags(); loadHistory(); });
+  tagSel.addEventListener('change', loadHistory);
+  fillTags();
+}
+async function loadHistory() {
+  const device = document.getElementById('hist-device').value || undefined;
+  const tag = document.getElementById('hist-tag').value || undefined;
+  if (!tag) {
+    document.querySelector('#hist-table tbody').innerHTML = '';
+    return;
+  }
+  const q = new URLSearchParams({ tag, limit: '500' });
+  if (device) q.set('device', device);
+  const rows = await fetch('/api/history?' + q).then(r => r.json());
+  const tb = document.querySelector('#hist-table tbody');
+  tb.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const val = r.value != null ? r.value + (r.engineering_unit ? ' ' + r.engineering_unit : '') : '';
+    tr.innerHTML = `<td>${r.timestamp}</td><td>${r.device}</td><td>${r.tag}</td>` +
+      `<td>${val}</td><td class="hex">${r.raw}</td>`;
+    tb.appendChild(tr);
+  });
+}
+loadFilters().then(() => {
+  setInterval(loadHistory, LIVE_TAG_POLL_MS);
+});
+</script>
+{% endblock %}

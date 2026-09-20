@@ -1,0 +1,20 @@
+body { font-family: Segoe UI, sans-serif; margin: 0; background: #1a1d23; color: #e8eaed; }
+.topnav { background: #2d3139; padding: 0.6rem 1.5rem; display: flex; gap: 1rem; }
+.topnav a { color: #8ab4f8; text-decoration: none; }
+main { margin: 1rem 2rem; }
+header { border-bottom: 1px solid #3c4043; padding-bottom: 0.5rem; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+th, td { border: 1px solid #3c4043; padding: 0.4rem 0.6rem; text-align: left; }
+th { background: #2d3139; }
+code { background: #2d3139; padding: 0.1rem 0.3rem; }
+.hint { color: #9aa0a6; font-size: 0.95rem; }
+.msg { padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px; }
+.msg.ok { background: #1e3a2f; }
+.msg.error { background: #4a1e1e; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; max-width: 900px; }
+.form-grid label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
+.form-grid input, .form-grid select, textarea { padding: 0.35rem; background: #2d3139; color: #e8eaed; border: 1px solid #3c4043; }
+button { padding: 0.4rem 0.8rem; cursor: pointer; }
+.hex { font-family: Consolas, monospace; font-size: 0.8rem; word-break: break-all; }
+dialog { background: #2d3139; color: #e8eaed; border: 1px solid #3c4043; padding: 1rem; max-width: 640px; }
+dialog .form-grid { margin-top: 0.5rem; }

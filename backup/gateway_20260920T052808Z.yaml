@@ -1,0 +1,55 @@
+gateway:
+  name: BKPL-GATEWAY-01
+  mode: production
+web:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  remote_enabled: false
+logging:
+  level: INFO
+  json_logs: false
+poll_groups:
+- id: default
+  interval_ms: 1000
+  priority: 5
+- id: fast
+  interval_ms: 500
+  priority: 5
+modbus:
+  devices:
+  - name: SIM_PLC
+    mode: simulator
+    enabled: true
+    unit_id: 1
+    address_base: one
+    host: 127.0.0.1
+    port: 502
+    serial_port: COM1
+    baudrate: 9600
+    bytesize: 8
+    parity: N
+    stopbits: 1
+    connect_timeout_sec: 3.0
+    response_timeout_sec: 1.0
+    retries: 3
+    retry_delay_sec: 0.5
+    reconnect_interval_sec: 5.0
+    max_registers_per_request: 125
+    keepalive: true
+opcua:
+  server:
+    enabled: true
+    endpoint: opc.tcp://127.0.0.1:4841
+    application_name: Modbus OPC UA Gateway
+    application_uri: urn:modbus-opcua-gateway:server
+    namespace_uri: urn:modbus-opcua-gateway:tags
+    security_mode: none
+    certificate_path: null
+    private_key_path: null
+  clients: []
+tags: []
+mappings: []
+security:
+  require_auth: false
+  users: []

@@ -1,0 +1,7 @@
+{
+  "timestamp": "20260920T052732Z",
+  "user": "anonymous",
+  "description": "remove tag boiler_temp",
+  "source": "config\\gateway.yaml",
+  "checksum": "8a6ff03cdadd6e9dabde0d962eda02a01a246079bcc92d99aa10ced00bb76eab"
+}

@@ -1,0 +1,109 @@
+gateway:
+  name: BKPL-GATEWAY-01
+  mode: production
+web:
+  enabled: true
+  host: 127.0.0.1
+  port: 8080
+  remote_enabled: false
+logging:
+  level: INFO
+  json_logs: false
+poll_groups:
+- id: default
+  interval_ms: 1000
+  priority: 5
+- id: fast
+  interval_ms: 500
+  priority: 5
+modbus:
+  devices:
+  - name: SIm2
+    mode: tcp_client
+    enabled: true
+    unit_id: 1
+    address_base: one
+    host: 127.0.0.1
+    port: 502
+    serial_port: COM3
+    baudrate: 9600
+    bytesize: 8
+    parity: N
+    stopbits: 1
+    connect_timeout_sec: 3.0
+    response_timeout_sec: 1.0
+    retries: 3
+    retry_delay_sec: 0.5
+    reconnect_interval_sec: 5.0
+    max_registers_per_request: 125
+    keepalive: true
+opcua:
+  server:
+    enabled: true
+    endpoint: opc.tcp://127.0.0.1:4841
+    application_name: Modbus OPC UA Gateway
+    application_uri: urn:modbus-opcua-gateway:server
+    namespace_uri: urn:modbus-opcua-gateway:tags
+    security_mode: none
+    certificate_path: null
+    private_key_path: null
+  clients: []
+tags:
+- name: tl
+  description: ''
+  enabled: true
+  device: SIm2
+  protocol: MODBUS_TCP
+  unit_id: 1
+  function: 3
+  address: 40001
+  register_count: 3
+  datatype: uint16
+  byte_order: ABCD
+  word_order: big
+  gain: 1.0
+  offset: 0.0
+  minimum: null
+  maximum: null
+  clamp: false
+  engineering_unit: ''
+  opcua_node: s=SIm2/tl
+  direction: mb_to_ua
+  poll_interval_ms: null
+  poll_group: fast
+  deadband: 0.0
+  writable: false
+  area: holding_register
+  address_internal: 0
+  address_display: 40001
+- name: th2
+  description: ''
+  enabled: true
+  device: SIm2
+  protocol: MODBUS_TCP
+  unit_id: 1
+  function: 3
+  address: 40002
+  register_count: 1
+  datatype: uint16
+  byte_order: ABCD
+  word_order: big
+  gain: 1.0
+  offset: 0.0
+  minimum: null
+  maximum: null
+  clamp: false
+  engineering_unit: ''
+  opcua_node: s=SIm2/th2
+  direction: mb_to_ua
+  poll_interval_ms: null
+  poll_group: default
+  deadband: 0.0
+  writable: false
+  area: holding_register
+  address_internal: 1
+  address_display: 40002
+mappings: []
+security:
+  require_auth: false
+  users: []

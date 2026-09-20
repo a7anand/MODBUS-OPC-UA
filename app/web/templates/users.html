@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1>Users &amp; roles</h1>
+<ul id="users"></ul>
+<h2>Add / update user</h2>
+<form id="f">
+  <input name="username" placeholder="username"/>
+  <input name="password" type="password" placeholder="password"/>
+  <select name="role"><option>Administrator</option><option>Engineer</option><option>Operator</option><option>Viewer</option></select>
+  <button>Save</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+function load(){fetch('/api/users').then(r=>r.json()).then(u=>{
+  document.getElementById('users').innerHTML=u.map(x=>'<li>'+x.username+' ('+x.role+')</li>').join('');
+});}
+load();
+document.getElementById('f').onsubmit=e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target);
+  fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    username:fd.get('username'),password:fd.get('password'),role:fd.get('role')
+  })}).then(()=>load());
+};
+</script>
+{% endblock %}

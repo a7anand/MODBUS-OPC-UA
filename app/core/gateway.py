@@ -28,6 +28,7 @@ from app.opcua.server import OpcUaServerEngine
 from app.security.authentication import AuthService
 from app.security.authorization import AuthorizationService
 from app.opcua.certificates import CertificateManager
+from app.core.ua_client_sync import OpcUaClientSyncService
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class Gateway:
         self.events.set_store(self.store)
         self.audit.set_store(self.store)
         self._stop_event = asyncio.Event()
+        self.ua_sync: OpcUaClientSyncService | None = None
 
     async def load(self) -> None:
         # Flow: YAML → validated document → tag DB → Modbus/OPC UA engines → scheduler.
@@ -81,6 +83,7 @@ class Gateway:
         self.opcua_clients = [
             OpcUaClientEngine(c) for c in self.doc.opcua.clients if c.enabled
         ]
+        self.ua_sync = OpcUaClientSyncService(self)
 
     def _on_comm(self, **kwargs: Any) -> None:
         """Scheduler callback → communication monitor (diagnostics / traffic pages)."""
@@ -126,6 +129,8 @@ class Gateway:
             loop = asyncio.get_running_loop()
             self.opcua_server.set_opcua_write_sink(self._on_opcua_client_write, loop)
         self.scheduler.start()
+        if self.ua_sync:
+            await self.ua_sync.start()
         self.events.emit("Gateway started", EventSeverity.INFO, "gateway")
         logger.info("Gateway %s started", self.doc.gateway.name)
 
@@ -155,6 +160,8 @@ class Gateway:
 
         Used after browser/API config saves (devices, tags, poll intervals).
         """
+        if self.ua_sync:
+            await self.ua_sync.stop()
         if self.scheduler:
             await self.scheduler.stop()
         if self.opcua_server and self.opcua_server.started:
@@ -178,9 +185,13 @@ class Gateway:
             loop = asyncio.get_running_loop()
             self.opcua_server.set_opcua_write_sink(self._on_opcua_client_write, loop)
         self.scheduler.start()
+        if self.ua_sync:
+            await self.ua_sync.start()
         self.events.emit("Configuration reloaded", EventSeverity.INFO, "gateway")
 
     async def stop(self) -> None:
+        if self.ua_sync:
+            await self.ua_sync.stop()
         if self.scheduler:
             await self.scheduler.stop()
         if self.opcua_server:

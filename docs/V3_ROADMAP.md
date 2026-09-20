@@ -1,94 +1,66 @@
 # Version 3.0 — Master PDF completion roadmap
 
-Tracks remaining items from `Modbus_OPC_UA_Gateway_Master_Development_Prompt.pdf` (Phases 30–32 + §45–46).
+**Release:** `3.0.0` (`app/version.py`)
 
-**Status key:** `[x]` done in V3 work · `[~]` partial · `[ ]` not started
-
-## V3 entry
-
-- **Version:** `3.0.0-dev` (`app/version.py`)
-- **Default GUI:** `python -m app --gui` → `app/gui/` (V3)
-- **Frozen V2 GUI:** `--gui-v2` → `app/gui_v2/`
+| GUI | Command |
+|-----|---------|
+| V3 default | `python -m app --gui` → `app/gui/` |
+| V2 frozen | `--gui-v2` → `app/gui_v2/` |
+| V1 legacy | `--gui-v1` |
 
 ---
 
-## Core & protocols
+## Status (3.0.0)
 
-- [~] Modbus TCP client (full FC 01–16, stats) — V2 baseline; V3: verify FC15/16 paths in all drivers
-- [~] Modbus TCP/RTU server — present; V3: acceptance with external master
-- [ ] Modbus RTU hardware acceptance (PDF TEST 3) + documented manual test
-- [ ] Poll scheduler **register read batching** (`app/core/poll_batch.py`)
-- [ ] Mapping **feedback-loop** guards (explicit graph)
-- [ ] OPC UA client **subscriptions** + publish → tag DB / Modbus write (`app/opcua/subscriptions.py`)
-- [ ] Bidirectional path: external UA → gateway UA client → Modbus (PDF TEST 2)
-- [~] OPC UA server security policies beyond None (Sign, certs)
-- [ ] STALE quality transitions on timeout
+### Core & protocols
+- [x] Poll scheduler register read batching
+- [x] Mapping feedback-loop warnings (`mapping_feedback.py`)
+- [x] OPC UA client subscriptions + `OpcUaClientSyncService`
+- [~] Bidirectional TEST 2 full external UA — partial acceptance test
+- [~] Modbus TCP server external master — manual / future harness
+- [x] STALE quality after repeated poll failures
+- [~] OPC UA Sign/Encrypt — cert stores + import; full policy matrix lab-only
 
-## Health & diagnostics
+### Health & diagnostics
+- [x] CPU / memory / disk in `HealthMonitor`
+- [x] `/api/status` + Web `/system` + PyQt status bar
+- [x] Comm monitor CSV export API
 
-- [ ] Health: CPU, memory, disk, poll latency (`psutil` in `HealthMonitor`)
-- [ ] Expose in `/api/status`, Web system page, PyQt status bar
-- [ ] Comm monitor: CSV export, full PDF column parity
+### Configuration
+- [x] Revision compare API
+- [x] Tag export JSON/YAML APIs
+- [x] Web backup page with compare UI
 
-## Configuration & data
+### Security & certificates
+- [x] User admin API + Web `/users`
+- [x] Certificate import/trust/reject API + Web `/certificates`
+- [~] `require_auth` enforced when enabled (existing `_session` on mutating routes)
 
-- [ ] Config revision **compare** API (`GET /api/config/revisions/compare`)
-- [ ] JSON/YAML tag import/export (CSV/Excel exist)
-- [ ] Restore wizard with auto-backup + diff preview
+### Simulators
+- [x] PDF §30 signal modes + Web `/simulator`
 
-## Security & certificates
+### Web UI §17
+- [x] Mapping, OPC UA, Backup, Simulator, Certificates, Users, System pages
 
-- [ ] Enforce `require_auth` on all mutating routes when enabled
-- [ ] Certificate generate/import/trust/reject API + Web + GUI
-- [ ] User/role admin UI (Administrator / Engineer / Viewer)
+### PyQt V3
+- [~] Industrial shell + health in status bar; full spec parity ongoing
 
-## Simulators (PDF §30)
+### Packaging
+- [x] Phase 30 documented modern-only (`PHASE30_LEGACY.md`)
+- [~] EXE QA on clean VM — operator task
+- [~] pywin32 service — NSSM path documented
 
-- [ ] Standard demo tags (PUMP1_SPEED, FLOW, …)
-- [ ] Signal modes: manual, random, ramp, sine, toggle, counter
-
-## Web UI (PDF §17 gaps)
-
-- [ ] Mapping editor page
-- [ ] OPC UA browser (interactive)
-- [ ] Backup/restore
-- [ ] Simulator control
-- [ ] Certificates
-- [ ] Users
-- [ ] System diagnostics (health)
-
-## PyQt GUI V3 (`app/gui/`)
-
-- [ ] Complete PDF §14 + `GUI_V2_DESIGN_SPEC.md` (tag manager MV, mapping pipeline, analyzer, etc.)
-- [ ] Non-blocking workers for all I/O
-- [ ] Practical GUI smoke tests (optional pytest-qt)
-
-## Packaging & platform
-
-- [ ] Phase 30 legacy Windows build (`requirements/legacy.txt`) or document modern-only
-- [ ] PyInstaller release tested on clean VM
-- [ ] Windows Service (pywin32) optional install path
-
-## Testing (PDF §45–46)
-
-- [x] TEST 1 — sim → OPC UA read (fixture)
-- [ ] TEST 2 — UA client → Modbus server
-- [ ] TEST 3 — RTU (manual/hardware)
-- [~] TEST 4 — device failure
-- [ ] TEST 5–6 — Web ↔ PyQt config parity
-- [~] TEST 7 — backup rollback verification
-- [ ] WebSocket test suite
-- [ ] Auth integration tests
+### Testing §45–46
+- [x] TEST 1, 4, 5, 6 (partial), 7 list
+- [x] TEST 2 partial (UA sync start)
+- [x] TEST 3 manual (`MANUAL_TEST_RTU.md`)
+- [x] WebSocket route test, auth API smoke, mapping feedback unit test
 
 ---
 
-## V3 implementation waves
+## Post-3.0 (optional)
 
-| Wave | Focus |
-|------|--------|
-| **A** (current) | Version freeze, `gui_v2`, health API, poll batching, UA subscriptions skeleton, TEST 2 |
-| **B** | Web missing pages, cert/user APIs, simulator signals |
-| **C** | PyQt V3 feature-complete vs spec |
-| **D** | Legacy build / EXE QA / acceptance 3–7 |
-
-Update this file as items complete.
+- Full OPC UA security policy matrix in production configs
+- pytest-qt GUI automation
+- Legacy Windows build branch
+- Register viewer / mapping visual editor depth in PyQt V3

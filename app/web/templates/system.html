@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}System{% endblock %}
+{% block content %}
+<h1>System diagnostics</h1>
+<pre id="health"></pre>
+<p><a href="/api/communication/export.csv" id="csv">Download communication CSV</a></p>
+{% endblock %}
+{% block scripts %}
+<script>
+function refresh(){
+  fetch('/api/status').then(r=>r.json()).then(s=>{
+    document.getElementById('health').textContent=JSON.stringify(s,null,2);
+  });
+}
+refresh(); setInterval(refresh,1500);
+document.getElementById('csv').onclick=async e=>{
+  e.preventDefault();
+  const d=await fetch('/api/communication/export.csv').then(r=>r.json());
+  const a=document.createElement('a');
+  a.href='data:text/csv,'+encodeURIComponent(d.content||'');
+  a.download='communication.csv'; a.click();
+};
+</script>
+{% endblock %}

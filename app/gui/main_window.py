@@ -107,6 +107,7 @@ def run_gui_app(config_path: Path) -> int:
                 ("modbus", "Modbus: …"),
                 ("opcua", "OPC UA: …"),
                 ("tags", "Tags: …"),
+                ("cpu", "CPU: …"),
                 ("event", "Last Event: …"),
             ):
                 lbl = QLabel(text)
@@ -195,6 +196,14 @@ def run_gui_app(config_path: Path) -> int:
                 good = sum(1 for t in tags if str(t.get("quality", "")).upper() == "GOOD")
                 bad = len(tags) - good
                 self._status_labels["tags"].setText(f"Tags: {good} Good / {bad} Bad")
+                health = st.get("health") or {}
+                mem = health.get("memory_mb")
+                cpu = health.get("cpu_percent")
+                self._status_labels["cpu"].setText(
+                    f"CPU: {cpu}%  Mem: {mem} MB"
+                    if mem is not None and cpu is not None
+                    else "CPU: —"
+                )
                 evs = api.get("/api/events") or []
                 if evs:
                     self._status_labels["event"].setText(f"Last Event: {evs[0].get('timestamp', '')}")

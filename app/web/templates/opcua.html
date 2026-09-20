@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}OPC UA Browser{% endblock %}
+{% block content %}
+<h1>OPC UA</h1>
+<div id="st"></div>
+<table border="1" cellpadding="4"><thead><tr><th>Browse name</th><th>NodeId</th><th></th></tr></thead><tbody id="tb"></tbody></table>
+{% endblock %}
+{% block scripts %}
+<script>
+fetch('/api/opcua/status').then(r=>r.json()).then(s=>{
+  document.getElementById('st').textContent='Server: '+JSON.stringify(s);
+});
+fetch('/api/opcua/browse').then(r=>r.json()).then(nodes=>{
+  const tb=document.getElementById('tb');
+  nodes.forEach(n=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${n.browse_name||''}</td><td><code>${n.node_id||''}</code></td>
+      <td><button data-nid="${n.node_id}">Read</button></td>`;
+    tr.querySelector('button').onclick=()=>{
+      fetch('/api/opcua/read',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({node_id:n.node_id})}).then(r=>r.json()).then(alert);
+    };
+    tb.appendChild(tr);
+  });
+});
+</script>
+{% endblock %}

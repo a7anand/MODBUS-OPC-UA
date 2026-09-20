@@ -102,6 +102,11 @@ class OpcUaServerConfig(BaseModel):
     private_key_path: str | None = None
 
 
+class OpcUaClientSubscription(BaseModel):
+    node_id: str
+    tag_name: str
+
+
 class OpcUaClientConfig(BaseModel):
     name: str
     endpoint: str
@@ -111,6 +116,7 @@ class OpcUaClientConfig(BaseModel):
     password: str | None = None
     publishing_interval_ms: int = 1000
     sampling_interval_ms: int = 500
+    subscriptions: list[OpcUaClientSubscription] = Field(default_factory=list)
 
 
 class OpcUaSection(BaseModel):

@@ -41,6 +41,7 @@ class PollScheduler:
         self._tasks: list[asyncio.Task] = []
         self._running = False
         self._opcua: OpcUaServerEngine | None = None
+        self._fail_counts: dict[str, int] = {}
 
     def set_opcua(self, opcua: OpcUaServerEngine) -> None:
         self._opcua = opcua
@@ -214,8 +215,13 @@ class PollScheduler:
                     tx_hex=tx_hex,
                     rx_hex=rx_hex,
                 )
-            q = self._mapping.quality_for_read_ok(rec.definition.name, False)
-            self._tags.update_value(rec.definition.name, rec.value, q, origin="modbus_poll")
+            name = rec.definition.name
+            fails = self._fail_counts.get(name, 0) + 1
+            self._fail_counts[name] = fails
+            q = self._mapping.quality_for_read_ok(name, False)
+            if fails >= 3:
+                q = TagQuality.STALE
+            self._tags.update_value(name, rec.value, q, origin="modbus_poll")
             return
         try:
             value = decode_tag_value(result.registers, rec.definition)
@@ -240,6 +246,7 @@ class PollScheduler:
                 tx_hex=tx_hex,
                 rx_hex=rx_hex,
             )
+        self._fail_counts[rec.definition.name] = 0
         self._tags.update_value(
             rec.definition.name,
             value,

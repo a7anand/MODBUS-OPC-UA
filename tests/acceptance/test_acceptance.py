@@ -72,3 +72,30 @@ async def test_7_backup_list():
     gw.config_manager.backup_active(gw.config_path, user="test")
     items = gw.backups.list_backups()
     assert items
+
+
+@pytest.mark.asyncio
+async def test_2_opcua_client_sync_service_starts():
+    """TEST 2 (partial): UA client sync service wires without error."""
+    gw = Gateway(CONFIG)
+    await gw.load()
+    gw.doc.web.enabled = False
+    assert gw.ua_sync is not None
+    await gw.start()
+    await asyncio.sleep(0.5)
+    await gw.stop()
+
+
+@pytest.mark.asyncio
+async def test_6_config_api_after_device_list():
+    """TEST 6 (partial): Web/API config surface matches core document."""
+    gw = Gateway(CONFIG)
+    await gw.load()
+    app = create_app(gw)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        cfg = await client.get("/api/config")
+        assert cfg.status_code == 200
+        assert "tags" in cfg.json()
+        dev = await client.get("/api/config/modbus/devices")
+        assert dev.status_code == 200

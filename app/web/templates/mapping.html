@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Mapping{% endblock %}
+{% block content %}
+<h1>Mapping validation</h1>
+<p>Mappings are defined in <code>gateway.yaml</code> under <code>mappings:</code>. Use validate before apply.</p>
+<button id="btn-validate">Validate mappings</button>
+<pre id="out"></pre>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('btn-validate').onclick=()=>{
+  fetch('/api/mappings/validate').then(r=>r.json()).then(d=>{
+    document.getElementById('out').textContent=JSON.stringify(d,null,2);
+  });
+};
+fetch('/api/config').then(r=>r.json()).then(c=>{
+  const pre=document.getElementById('out');
+  pre.textContent='mappings: '+JSON.stringify(c.mappings||[],null,2);
+});
+</script>
+{% endblock %}

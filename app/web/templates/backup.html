@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Backup{% endblock %}
+{% block content %}
+<h1>Backup &amp; versioning</h1>
+<button id="mk">Create backup</button>
+<button id="reload">Reload config</button>
+<h2>Backups</h2><ul id="backups"></ul>
+<h2>Revisions</h2><ul id="revs"></ul>
+<h2>Compare revisions</h2>
+<input id="left" type="number" placeholder="left version"/> 
+<input id="right" type="number" placeholder="right version"/>
+<button id="cmp">Compare</button>
+<pre id="diff"></pre>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('mk').onclick=()=>fetch('/api/backups',{method:'POST'}).then(()=>load());
+document.getElementById('reload').onclick=()=>fetch('/api/config/reload',{method:'POST'}).then(r=>r.json()).then(alert);
+function load(){
+  fetch('/api/backups').then(r=>r.json()).then(b=>{
+    document.getElementById('backups').innerHTML=b.map(x=>'<li>'+JSON.stringify(x)+'</li>').join('');
+  });
+  fetch('/api/config/revisions').then(r=>r.json()).then(b=>{
+    document.getElementById('revs').innerHTML=b.map(x=>'<li>v'+x.version+' '+x.timestamp+' '+x.description+'</li>').join('');
+  });
+}
+document.getElementById('cmp').onclick=()=>{
+  const l=document.getElementById('left').value,r=document.getElementById('right').value;
+  fetch(`/api/config/revisions/compare?left=${l}&right=${r}`).then(r=>r.json()).then(d=>{
+    document.getElementById('diff').textContent=(d.diff||[]).join('\n');
+  });
+};
+load();
+</script>
+{% endblock %}

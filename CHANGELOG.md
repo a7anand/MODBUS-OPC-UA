@@ -1,15 +1,18 @@
 # Changelog
 
-## 3.0.0-dev (in progress)
+## 3.0.0 (2026-09-21)
 
-Version 3 completes remaining master-PDF items. See [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).
+Master PDF completion release. See [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).
 
-- Product version `3.0.0-dev`; default GUI is V3 (`app/gui/`)
-- Frozen V2 GUI copied to `app/gui_v2/` (`--gui-v2`)
-- Health monitor: CPU / memory / disk via `psutil`
-- Modbus poll **register batching** (`app/core/poll_batch.py`)
-- OPC UA client subscription manager (`app/opcua/subscriptions.py`)
-- Config revision **compare** API (`GET /api/config/revisions/compare`)
+- Admin APIs: users, certificates, simulator signals, comm CSV export, tag JSON/YAML export
+- Web pages: mapping, OPC UA, backup, simulator, certificates, users, system
+- `OpcUaClientSyncService`, mapping feedback validation, STALE quality, UA subscriptions
+- Acceptance/manual tests expanded; Phase 30 modern-only documented
+- Default GUI V3 (`app/gui/`); frozen V2 at `app/gui_v2/` (`--gui-v2`)
+
+## 3.0.0-dev
+
+- Wave A: health, poll batching, revision compare, gui_v2 freeze
 
 ## 2.0.0 (2026-09-21) — frozen
 

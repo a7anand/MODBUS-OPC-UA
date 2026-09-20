@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Simulator{% endblock %}
+{% block content %}
+<h1>Modbus simulator signals (PDF §30)</h1>
+<table border="1" cellpadding="4"><thead><tr><th>Signal</th><th>Address</th><th>Mode</th><th>Value</th><th>Set mode</th></tr></thead><tbody id="tb"></tbody></table>
+{% endblock %}
+{% block scripts %}
+<script>
+const modes=['manual','random','ramp','sine','toggle','counter'];
+function load(){
+  fetch('/api/simulator/signals').then(r=>r.json()).then(d=>{
+    const tb=document.getElementById('tb'); tb.innerHTML='';
+    (d.signals||[]).forEach(s=>{
+      const tr=document.createElement('tr');
+      const sel=document.createElement('select');
+      modes.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
+      const btn=document.createElement('button'); btn.textContent='Apply';
+      btn.onclick=()=>fetch('/api/simulator/signals/mode',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:s.name,mode:sel.value})}).then(()=>load());
+      tr.innerHTML=`<td>${s.name}</td><td>${s.address}</td><td>${s.mode}</td><td>${s.value}</td><td></td>`;
+      tr.lastElementChild.append(sel,btn);
+      tb.appendChild(tr);
+    });
+  });
+}
+load(); setInterval(load,2000);
+</script>
+{% endblock %}

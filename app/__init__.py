@@ -7,5 +7,6 @@ clients of Core and must not implement protocol I/O themselves.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
-__product_name__ = "ModbusOPCUAGateway"
+from app.version import __product_name__, __version__
+
+__all__ = ["__version__", "__product_name__"]

@@ -15,7 +15,9 @@ from pydantic import BaseModel
 from app.core.config_manager import ConfigManager
 from app.core.enums import RegisterArea
 from app.core.gateway import Gateway
+from app.api.routes.admin_api import register_admin_routes
 from app.api.routes.config_api import register_config_routes
+from app.core.mapping_feedback import validate_mappings
 from app.api.websocket import router as ws_router
 
 from app.utils.runtime_paths import app_root, bundle_dir, is_frozen
@@ -57,7 +59,7 @@ class LoginBody(BaseModel):
 
 
 def create_app(gateway: Gateway) -> FastAPI:
-    app = FastAPI(title="Modbus OPC UA Gateway API", version="0.1.0")
+    app = FastAPI(title="Modbus OPC UA Gateway API", version="3.0.0")
     templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))
     static_path = WEB_DIR / "static"
     if static_path.is_dir():
@@ -121,6 +123,34 @@ def create_app(gateway: Gateway) -> FastAPI:
     async def page_history(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(request, "history.html", {})
 
+    @app.get("/mapping", response_class=HTMLResponse)
+    async def page_mapping(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "mapping.html", {})
+
+    @app.get("/opcua", response_class=HTMLResponse)
+    async def page_opcua(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "opcua.html", {})
+
+    @app.get("/backup", response_class=HTMLResponse)
+    async def page_backup(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "backup.html", {})
+
+    @app.get("/simulator", response_class=HTMLResponse)
+    async def page_simulator(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "simulator.html", {})
+
+    @app.get("/certificates", response_class=HTMLResponse)
+    async def page_certificates(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "certificates.html", {})
+
+    @app.get("/users", response_class=HTMLResponse)
+    async def page_users(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "users.html", {})
+
+    @app.get("/system", response_class=HTMLResponse)
+    async def page_system(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "system.html", {})
+
     @app.get("/api/status")
     async def api_status() -> dict[str, Any]:
         return gateway.status()
@@ -176,7 +206,10 @@ def create_app(gateway: Gateway) -> FastAPI:
     @app.post("/api/config/validate")
     async def api_validate_config(payload: dict[str, Any]) -> dict[str, Any]:
         try:
-            ConfigManager().validate(payload)
+            doc = ConfigManager().validate(payload)
+            map_errs = validate_mappings(doc)
+            if map_errs:
+                return {"valid": False, "error": "; ".join(map_errs)}
             return {"valid": True}
         except Exception as exc:  # noqa: BLE001
             return {"valid": False, "error": str(exc)}
@@ -198,6 +231,27 @@ def create_app(gateway: Gateway) -> FastAPI:
     @app.get("/api/config/revisions")
     async def api_config_revisions() -> list[dict[str, Any]]:
         return gateway.store.list_config_revisions()
+
+    @app.get("/api/config/revisions/compare")
+    async def api_config_revisions_compare(
+        left: int, right: int
+    ) -> dict[str, Any]:
+        a = gateway.store.get_config_revision(left)
+        b = gateway.store.get_config_revision(right)
+        if a is None or b is None:
+            raise HTTPException(404, "Revision not found")
+        import difflib
+
+        diff = list(
+            difflib.unified_diff(
+                a.splitlines(),
+                b.splitlines(),
+                fromfile=f"rev-{left}",
+                tofile=f"rev-{right}",
+                lineterm="",
+            )
+        )
+        return {"left": left, "right": right, "diff": diff, "identical": a == b}
 
     @app.post("/api/config/reload")
     async def api_config_reload(user: str = Depends(_session)) -> dict[str, Any]:
@@ -306,6 +360,10 @@ def create_app(gateway: Gateway) -> FastAPI:
     config_router = APIRouter(prefix="/api/config")
     register_config_routes(config_router, gateway, _session)
     app.include_router(config_router)
+
+    admin_router = APIRouter(prefix="/api")
+    register_admin_routes(admin_router, gateway, _session)
+    app.include_router(admin_router)
 
     app.include_router(ws_router)
     from app.api import websocket as ws_mod

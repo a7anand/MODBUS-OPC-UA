@@ -1,13 +1,28 @@
 # Changelog
 
+## 3.0.0 (2026-09-21)
+
+Master PDF completion release. See [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).
+
+- Admin APIs: users, certificates, simulator signals, comm CSV export, tag JSON/YAML export
+- Web pages: mapping, OPC UA, backup, simulator, certificates, users, system
+- `OpcUaClientSyncService`, mapping feedback validation, STALE quality, UA subscriptions
+- Acceptance/manual tests expanded; Phase 30 modern-only documented
+- Default GUI V3 (`app/gui/`); frozen V2 at `app/gui_v2/` (`--gui-v2`)
+
+## 3.0.0-dev
+
+- Wave A: health, poll batching, revision compare, gui_v2 freeze
+
+## 2.0.0 (2026-09-21) — frozen
+
+Baseline documented in [docs/VERSION2_FREEZE.md](docs/VERSION2_FREEZE.md).
+
+- Gateway Core Phases 1–26 (Modbus/OPC UA, Web, REST, WebSocket)
+- PyQt v1 (`gui_v1`) and v2 industrial workstation (`gui` → now `gui_v2`)
+- Portable EXE scripts, Windows startup helpers, full docs set
+- 38+ automated tests with `tests/fixtures/gateway_test.yaml`
+
 ## 0.1.0 (2026-09-20)
 
-- Greenfield `app/` Gateway Core with Modbus TCP/RTU client and server abstractions
-- OPC UA server and client engines, mapping, scheduler, tag database
-- Embedded Web UI (dashboard, tags, events, diagnostics), REST API, WebSocket
-- PyQt5 engineering GUI shell
-- SQLite persistence for audit, events, configuration revisions
-- Rotating log files under `logs/`
-- Portable EXE build scripts (PyInstaller)
-- Windows service guidance (NSSM / pywin32)
-- Acceptance test suite under `tests/acceptance/`
+- Initial greenfield `app/` release

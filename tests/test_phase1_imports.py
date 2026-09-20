@@ -23,7 +23,7 @@ def _iter_module_names(package_name: str) -> list[str]:
 
 
 def test_app_version_and_product_name() -> None:
-    assert app.__version__ == "0.1.0"
+    assert app.__version__ == "3.0.0"
     assert app.__product_name__ == "ModbusOPCUAGateway"
 
 
@@ -46,7 +46,7 @@ def test_import_all_app_subpackages() -> None:
 
 
 def test_gui_must_not_import_protocol_libraries() -> None:
-    for package in ("app.gui", "app.gui_v1"):
+    for package in ("app.gui", "app.gui_v1", "app.gui_v2"):
         for name in _iter_module_names(package):
             _assert_gui_module_clean(name)
 
@@ -73,6 +73,7 @@ def test_runtime_directories_exist() -> None:
         "app/api/routes",
         "app/web/static",
         "app/gui",
+        "app/gui_v2",
         "config",
         "data",
         "backup",

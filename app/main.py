@@ -86,6 +86,15 @@ def run_gui_v1(config_path: Path) -> int:
     return run_gui_app(config_path)
 
 
+def run_gui_v2(config_path: Path) -> int:
+    try:
+        from app.gui_v2.main_window import run_gui_app
+    except ImportError:
+        print("PyQt5 not installed. pip install PyQt5 or pip install -e '.[gui]'", file=sys.stderr)
+        return 1
+    return run_gui_app(config_path)
+
+
 if __name__ == "__main__":
     from app.cli import main
 

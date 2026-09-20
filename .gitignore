@@ -1,17 +1,53 @@
+# Python
 __pycache__/
 *.py[cod]
-*.egg-info/
-.eggs/
-dist/
-build/
+*.pyo
+
+# Virtual environments
 .venv/
 venv/
+env/
+
+# Cursor / IDE
+.cursor/
+.vscode/
+.idea/
+
+# Build / packaging
+build/
+dist/
+*.spec
+*.egg-info/
+
+# Runtime logs
+logs/
+*.log
+
+# Runtime databases
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Cache
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-*.log
-.coverage
-htmlcov/
-.pki/
-*.pem
-agent-tools/
+
+# Temporary
+*.tmp
+*.temp
+
+# Environment / secrets
+.env
+.env.*
+secrets/
+
+# Private OPC UA certificates/keys
+certificates/own/*.key
+certificates/own/*.pem
+certificates/own/*.pfx
+certificates/own/*.p12
+
+# Windows
+Thumbs.db
+Desktop.ini

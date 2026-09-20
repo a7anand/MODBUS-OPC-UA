@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.1 (2026-09-21)
+
+- Restore API: auto-backup before restore + `reload_config`
+- Certificate self-signed generation (`cryptography`), Web button
+- Tag import preview JSON/YAML; poll cycle stats → health
+- PDF gap doc (`PDF_REMAINING.md`); acceptance TEST 2 + TEST 7
+
 ## 3.0.0 (2026-09-21)
 
 Master PDF completion release. See [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).

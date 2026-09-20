@@ -157,6 +157,20 @@ def register_admin_routes(
             writer.writerows(rows)
         return {"content": buf.getvalue()}
 
+    @router.post("/certificates/generate")
+    async def generate_cert(user: str = Depends(session_dep)) -> dict[str, Any]:
+        _admin(user)
+        try:
+            from app.opcua.cert_generator import generate_self_signed
+
+            path = generate_self_signed(gateway.certs.base / "own")
+        except ImportError as exc:
+            raise HTTPException(
+                501, "Install cryptography package for certificate generation"
+            ) from exc
+        gateway.audit.record(user, "cert_generate", str(path))
+        return {"ok": True, "certificate": str(path)}
+
     @router.get("/mappings/validate")
     async def mappings_validate() -> dict[str, Any]:
         if not gateway.doc:

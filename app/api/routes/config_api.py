@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import yaml
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.api.models_config import (
@@ -230,6 +231,23 @@ def register_config_routes(
         if not gateway.doc:
             return {"content": ""}
         return {"content": export_tags_csv(gateway.doc.tags)}
+
+    @app_router.post("/tags/import/preview-json")
+    async def import_preview_json(body: dict[str, Any]) -> dict[str, Any]:
+        raw = body.get("tags") if isinstance(body.get("tags"), list) else body
+        if not isinstance(raw, list):
+            raise HTTPException(400, "Expected JSON array or {tags: [...]}")
+        tags = [TagDefinition.model_validate(t) for t in raw]
+        _pending_import["rows"] = [t.model_dump(mode="json") for t in tags]
+        return {"row_count": len(tags), "valid_tags": len(tags), "errors": [], "preview": raw[:25]}
+
+    @app_router.post("/tags/import/preview-yaml")
+    async def import_preview_yaml(body: ImportTextBody) -> dict[str, Any]:
+        data = yaml.safe_load(body.content) or {}
+        raw = data.get("tags", data if isinstance(data, list) else [])
+        tags = [TagDefinition.model_validate(t) for t in raw]
+        _pending_import["rows"] = [t.model_dump(mode="json") for t in tags]
+        return {"row_count": len(tags), "valid_tags": len(tags), "errors": [], "preview": raw[:25]}
 
     @app_router.post("/tags/import/preview")
     async def import_preview(body: ImportTextBody) -> dict[str, Any]:

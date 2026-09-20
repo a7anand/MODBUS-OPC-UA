@@ -32,12 +32,14 @@ class PollScheduler:
         mapping: MappingEngine,
         poll_intervals: dict[str, int],
         on_comm: Callable[..., None] | None = None,
+        on_poll_stats: Callable[[float, int, int], None] | None = None,
     ) -> None:
         self._tags = tags
         self._modbus = modbus
         self._mapping = mapping
         self._intervals = poll_intervals
         self._on_comm = on_comm
+        self._on_poll_stats = on_poll_stats
         self._tasks: list[asyncio.Task] = []
         self._running = False
         self._opcua: OpcUaServerEngine | None = None
@@ -82,6 +84,8 @@ class PollScheduler:
                     for rec in batch.records:
                         await self._poll_one(rec)
             elapsed = (datetime.now(timezone.utc) - started).total_seconds() * 1000
+            if self._on_poll_stats:
+                self._on_poll_stats(elapsed, errors, total)
             await asyncio.sleep(max(0, (interval_ms - elapsed) / 1000))
 
     async def _poll_batch(self, batch: ReadBatch) -> None:

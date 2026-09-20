@@ -1,0 +1,40 @@
+# TEST 2: OPC UA variable → gateway UA client → Modbus TCP server holding register
+gateway:
+  name: TEST2-GW
+  mode: production
+web:
+  enabled: false
+poll_groups:
+  - id: default
+    interval_ms: 500
+modbus:
+  devices:
+    - name: MB_SRV
+      mode: simulator
+      unit_id: 1
+      enabled: true
+opcua:
+  server:
+    enabled: false
+  clients:
+    - name: ext_ua
+      enabled: true
+      endpoint: opc.tcp://127.0.0.1:14870/
+      subscriptions:
+        - node_id: ns=2;i=42
+          tag_name: ua_bridge
+tags:
+  - name: ua_bridge
+    device: MB_SRV
+    function: 3
+    address: 40001
+    datatype: int16
+    writable: true
+    poll_group: default
+mappings:
+  - id: m1
+    tag_name: ua_bridge
+    direction: ua_to_mb
+    enabled: true
+security:
+  require_auth: false

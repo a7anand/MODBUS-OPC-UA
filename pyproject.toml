@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aa-modbus-ua-gateway"
-version = "3.0.0"
+version = "3.0.1"
 description = "Industrial Modbus ↔ OPC UA Gateway (Core, PyQt GUI, embedded Web UI)"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,6 +23,7 @@ dependencies = [
   "pyserial>=3.5",
   "Jinja2>=3.1",
   "psutil>=5.9",
+  "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]

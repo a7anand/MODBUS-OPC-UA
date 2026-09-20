@@ -36,12 +36,15 @@ class OpcUaSubscriptionManager:
         if not client._client:
             return
         for node_id, tag_name in entries:
-            node = client._client.get_node(node_id)
-            handler = _GatewaySubHandler(tag_name, on_value)
-            sub = await client._client.create_subscription(500, handler)
-            await sub.subscribe_data_change(node)
-            self._subscriptions.append(sub)
-            logger.info("OPC UA subscribe %s ← %s", tag_name, node_id)
+            try:
+                node = client._client.get_node(node_id)
+                handler = _GatewaySubHandler(tag_name, on_value)
+                sub = await client._client.create_subscription(500, handler)
+                await sub.subscribe_data_change(node)
+                self._subscriptions.append(sub)
+                logger.info("OPC UA subscribe %s ← %s", tag_name, node_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("OPC UA subscribe skipped for %s: %s", tag_name, exc)
 
     async def stop_all(self) -> None:
         for sub in self._subscriptions:

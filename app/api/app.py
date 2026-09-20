@@ -271,9 +271,15 @@ def create_app(gateway: Gateway) -> FastAPI:
 
     @app.post("/api/restore")
     async def api_restore(backup_path: str, user: str = Depends(_session)) -> dict[str, Any]:
+        if gateway.authz and not gateway.authz.can_write(user):
+            raise HTTPException(403, "Forbidden")
+        pre = gateway.config_manager.backup_active(
+            gateway.config_path, user=user, description="pre-restore auto-backup"
+        )
         gateway.backups.restore(Path(backup_path), gateway.config_path)
-        gateway.audit.record(user, "config_restore", backup_path)
-        return {"ok": True}
+        gateway.audit.record(user, "config_restore", backup_path, new_value=str(pre))
+        await gateway.reload_config()
+        return {"ok": True, "pre_restore_backup": str(pre)}
 
     @app.get("/api/opcua/browse")
     async def api_opcua_browse() -> list[dict[str, Any]]:
@@ -282,7 +288,9 @@ def create_app(gateway: Gateway) -> FastAPI:
         return []
 
     @app.post("/api/modbus/read")
-    async def api_modbus_read(body: ModbusReadBody) -> dict[str, Any]:
+    async def api_modbus_read(
+        body: ModbusReadBody, user: str = Depends(_session)
+    ) -> dict[str, Any]:
         if not gateway.modbus_diag:
             raise HTTPException(503, "Not ready")
         area = RegisterArea(body.area)

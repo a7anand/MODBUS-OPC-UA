@@ -77,6 +77,7 @@ class Gateway:
             mapping,
             intervals,
             on_comm=self._on_comm,
+            on_poll_stats=lambda ms, err, tot: self.health.record_poll_cycle(ms, err, tot),
         )
         self.scheduler.set_opcua(self.opcua_server)
         self.modbus_diag = ModbusDiagnostics(self.modbus, self.comm_monitor)

@@ -1,6 +1,6 @@
 # Version 3.0 — Master PDF completion roadmap
 
-**Release:** `3.0.0` (`app/version.py`)
+**Release:** `3.0.1` (`app/version.py`) · baseline `3.0.0` tagged
 
 | GUI | Command |
 |-----|---------|
@@ -10,13 +10,13 @@
 
 ---
 
-## Status (3.0.0)
+## Status (3.0.1)
 
 ### Core & protocols
 - [x] Poll scheduler register read batching
 - [x] Mapping feedback-loop warnings (`mapping_feedback.py`)
 - [x] OPC UA client subscriptions + `OpcUaClientSyncService`
-- [~] Bidirectional TEST 2 full external UA — partial acceptance test
+- [x] TEST 2 acceptance (UA → tag `ua_bridge`)
 - [~] Modbus TCP server external master — manual / future harness
 - [x] STALE quality after repeated poll failures
 - [~] OPC UA Sign/Encrypt — cert stores + import; full policy matrix lab-only
@@ -51,8 +51,8 @@
 - [~] pywin32 service — NSSM path documented
 
 ### Testing §45–46
-- [x] TEST 1, 4, 5, 6 (partial), 7 list
-- [x] TEST 2 partial (UA sync start)
+- [x] TEST 1, 4, 5, 6 (partial), 7 restore roundtrip
+- [x] TEST 2 (UA client poll → mapped tag)
 - [x] TEST 3 manual (`MANUAL_TEST_RTU.md`)
 - [x] WebSocket route test, auth API smoke, mapping feedback unit test
 

@@ -23,7 +23,7 @@ def _iter_module_names(package_name: str) -> list[str]:
 
 
 def test_app_version_and_product_name() -> None:
-    assert app.__version__ == "3.0.0"
+    assert app.__version__ == "3.0.1"
     assert app.__product_name__ == "ModbusOPCUAGateway"
 
 

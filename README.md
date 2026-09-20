@@ -19,7 +19,7 @@ python -m app --run --config config\gateway.yaml
 - OPC UA: `opc.tcp://localhost:4840` (see config)
 - API: `/api/status`, `/api/tags`, OpenAPI at `/docs`
 
-GUI (optional): `pip install -e ".[gui]"` then `python -m app --gui` (V3) or `--gui-v2` (frozen). See [docs/DESKTOP_GUI_MANUAL.md](docs/DESKTOP_GUI_MANUAL.md) and [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).
+GUI (optional): `pip install -e ".[gui]"` then `python -m app --gui` (V3) or `--gui-v2` (frozen). See **[docs/VERSIONING_GUIDE.md](docs/VERSIONING_GUIDE.md)** (all versions & run modes), [docs/DESKTOP_GUI_MANUAL.md](docs/DESKTOP_GUI_MANUAL.md), and [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).
 
 ## Layout
 

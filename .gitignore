@@ -1,7 +1,12 @@
+# ============================================================
+# Modbus OPC UA Gateway - Git Ignore
+# ============================================================
+
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
 
 # Virtual environments
 .venv/
@@ -33,21 +38,34 @@ data/*.sqlite3
 .mypy_cache/
 .ruff_cache/
 
-# Temporary
+# Temporary files
 *.tmp
 *.temp
+*.bak
 
 # Environment / secrets
 .env
 .env.*
 secrets/
 
-# Private OPC UA certificates/keys
+# Private OPC UA certificates / keys
 certificates/own/*.key
 certificates/own/*.pem
 certificates/own/*.pfx
 certificates/own/*.p12
 
+# OPC UA generated/rejected runtime certificates
+certificates/rejected/
+
 # Windows
 Thumbs.db
 Desktop.ini
+
+# OS temporary files
+*.swp
+*.swo
+
+# Test/runtime output
+coverage.xml
+htmlcov/
+.coverage

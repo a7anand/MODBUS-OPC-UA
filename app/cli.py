@@ -39,7 +39,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--gui",
         action="store_true",
-        help="Run PyQt v2 engineering workstation GUI (default GUI)",
+        help="Run PyQt v3 engineering workstation GUI (default)",
+    )
+    parser.add_argument(
+        "--gui-v2",
+        action="store_true",
+        help="Run frozen PyQt v2 GUI (see docs/VERSION2_FREEZE.md)",
     )
     parser.add_argument(
         "--gui-v1",
@@ -98,6 +103,11 @@ def main(argv: list[str] | None = None) -> int:
         from app.main import run_gui_v1
 
         return run_gui_v1(args.config)
+
+    if args.gui_v2:
+        from app.main import run_gui_v2
+
+        return run_gui_v2(args.config)
 
     if args.gui:
         from app.main import run_gui

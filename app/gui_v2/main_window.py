@@ -25,32 +25,32 @@ def run_gui_app(config_path: Path) -> int:
         QWidget,
     )
 
-    from app.gui.navigation import EngineeringSidebar
-    from app.gui.pages.backup import BackupVersioningPage
-    from app.gui.pages.base import PageBase
-    from app.gui.pages.comm_monitor import CommunicationMonitorPage
-    from app.gui.pages.config_pages import (
+    from app.gui_v2.navigation import EngineeringSidebar
+    from app.gui_v2.pages.backup import BackupVersioningPage
+    from app.gui_v2.pages.base import PageBase
+    from app.gui_v2.pages.comm_monitor import CommunicationMonitorPage
+    from app.gui_v2.pages.config_pages import (
         ModbusDevicesPage,
         gateway_page,
         opcua_config_page,
         web_config_page,
     )
-    from app.gui.pages.config_wizard import ConfigWizardPage
-    from app.gui.pages.dashboard import DashboardPage
-    from app.gui.pages.events import EventsAlarmsPage
-    from app.gui.pages.import_export import ImportExportPage
-    from app.gui.pages.mapping import MappingEditorPage
-    from app.gui.pages.modbus_diag import ModbusDiagnosticPage
-    from app.gui.pages.opcua_browser import OpcUaBrowserPage
-    from app.gui.pages.tag_manager import TagManagerPage
-    from app.gui.pages.utilities import (
+    from app.gui_v2.pages.config_wizard import ConfigWizardPage
+    from app.gui_v2.pages.dashboard import DashboardPage
+    from app.gui_v2.pages.events import EventsAlarmsPage
+    from app.gui_v2.pages.import_export import ImportExportPage
+    from app.gui_v2.pages.mapping import MappingEditorPage
+    from app.gui_v2.pages.modbus_diag import ModbusDiagnosticPage
+    from app.gui_v2.pages.opcua_browser import OpcUaBrowserPage
+    from app.gui_v2.pages.tag_manager import TagManagerPage
+    from app.gui_v2.pages.utilities import (
         RegisterViewerPage,
         certificates_page,
         simulators_page,
         system_page,
         users_page,
     )
-    from app.gui.theme import ThemeManager, ThemeId
+    from app.gui_v2.theme import ThemeManager, ThemeId
     from app.gui_shared.api_client import GatewayApiClient, api_base_from_config
 
     api = GatewayApiClient(api_base_from_config(config_path))
@@ -59,7 +59,7 @@ def run_gui_app(config_path: Path) -> int:
     class MainWindow(QMainWindow):
         def __init__(self) -> None:
             super().__init__()
-            self.setWindowTitle("Modbus OPC UA Gateway — Engineering Workstation (v3)")
+            self.setWindowTitle("Modbus OPC UA Gateway — Engineering Workstation (v2)")
             self.resize(1400, 860)
             self._pages: dict[str, PageBase] = {}
             self._build_pages()

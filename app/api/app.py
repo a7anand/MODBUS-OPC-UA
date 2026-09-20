@@ -199,6 +199,27 @@ def create_app(gateway: Gateway) -> FastAPI:
     async def api_config_revisions() -> list[dict[str, Any]]:
         return gateway.store.list_config_revisions()
 
+    @app.get("/api/config/revisions/compare")
+    async def api_config_revisions_compare(
+        left: int, right: int
+    ) -> dict[str, Any]:
+        a = gateway.store.get_config_revision(left)
+        b = gateway.store.get_config_revision(right)
+        if a is None or b is None:
+            raise HTTPException(404, "Revision not found")
+        import difflib
+
+        diff = list(
+            difflib.unified_diff(
+                a.splitlines(),
+                b.splitlines(),
+                fromfile=f"rev-{left}",
+                tofile=f"rev-{right}",
+                lineterm="",
+            )
+        )
+        return {"left": left, "right": right, "diff": diff, "identical": a == b}
+
     @app.post("/api/config/reload")
     async def api_config_reload(user: str = Depends(_session)) -> dict[str, Any]:
         if gateway.authz and not gateway.authz.can_write(user):

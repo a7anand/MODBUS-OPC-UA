@@ -10,31 +10,37 @@ import yaml
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.api.models_config import (
+    GatewaySettingsBody,
     ImportCommitBody,
     ImportTextBody,
     ModbusDeviceBody,
     PollGroupBody,
     PollGroupIntervalBody,
     TagDefinitionBody,
+    YamlDocumentBody,
 )
 from app.core.config_editor import (
     ConfigEditorError,
     add_device,
     add_poll_group,
     add_tag,
+    apply_settings,
     list_devices,
     list_poll_groups,
     list_tag_definitions,
     merge_imported_tags,
     remove_device,
     remove_tag,
+    settings_to_dict,
     update_device,
     update_poll_group_interval,
     update_tag,
 )
+from app.core.config_manager import ConfigManager
 from app.core.config_schema import GatewayDocument, ModbusDeviceConfig, TagDefinition
 from app.core.enums import ByteLayout, DataType, MappingDirection, ModbusFunction, WordOrder
 from app.core.gateway import Gateway
+from app.core.mapping_feedback import validate_mappings
 from app.core.import_export import (
     export_tags_csv,
     import_tags_csv,
@@ -73,6 +79,93 @@ def register_config_routes(
     session_dep: Any,
 ) -> None:
     """Browser config API: devices, tags (incl. edit), poll groups, CSV/Excel import."""
+    @app_router.get("/settings")
+    async def get_gateway_settings() -> dict[str, Any]:
+        if not gateway.doc:
+            return {}
+        return settings_to_dict(gateway.doc)
+
+    @app_router.put("/settings")
+    async def put_gateway_settings(
+        body: GatewaySettingsBody, user: str = Depends(session_dep)
+    ) -> dict[str, Any]:
+        if gateway.authz and not gateway.authz.can_write(user):
+            raise HTTPException(403, "Forbidden")
+        if not gateway.doc:
+            raise HTTPException(503, "Gateway not loaded")
+        try:
+            doc, web_restart = apply_settings(
+                gateway.doc.model_copy(deep=True), body.model_dump()
+            )
+        except ConfigEditorError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        await gateway.persist_document(doc, user=user, description="gateway settings")
+        msg = "Settings saved and engines reloaded."
+        if web_restart:
+            msg += (
+                " Web listen address changed — restart the gateway process "
+                "(or Windows service) to apply the new HTTP port/host."
+            )
+        return {"ok": True, "message": msg, "web_restart_required": web_restart}
+
+    @app_router.post("/yaml/validate")
+    async def validate_gateway_yaml(body: YamlDocumentBody) -> dict[str, Any]:
+        try:
+            data = yaml.safe_load(body.content)
+            if not isinstance(data, dict):
+                raise HTTPException(400, "YAML root must be a mapping")
+            doc = ConfigManager().validate(data)
+            map_errs = validate_mappings(doc)
+            if map_errs:
+                return {"valid": False, "error": "; ".join(map_errs)}
+            return {"valid": True}
+        except HTTPException:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            return {"valid": False, "error": str(exc)}
+
+    @app_router.get("/yaml")
+    async def get_gateway_yaml() -> dict[str, str]:
+        path = gateway.config_path
+        if not path.is_file():
+            raise HTTPException(404, "Config file not found")
+        return {"path": str(path), "content": path.read_text(encoding="utf-8")}
+
+    @app_router.put("/yaml")
+    async def put_gateway_yaml(
+        body: YamlDocumentBody, user: str = Depends(session_dep)
+    ) -> dict[str, Any]:
+        if gateway.authz and not gateway.authz.can_write(user):
+            raise HTTPException(403, "Forbidden")
+        try:
+            data = yaml.safe_load(body.content)
+            if not isinstance(data, dict):
+                raise HTTPException(400, "YAML root must be a mapping")
+            doc = ConfigManager().validate(data)
+        except HTTPException:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(400, str(exc)) from exc
+        old_web = (
+            (gateway.doc.web.host, gateway.doc.web.port) if gateway.doc else (None, None)
+        )
+        gateway.config_manager.backup_active(
+            gateway.config_path, user=user, description="pre-yaml-edit backup"
+        )
+        gateway.config_path.write_text(
+            yaml.safe_dump(doc.model_dump(mode="json"), sort_keys=False),
+            encoding="utf-8",
+        )
+        await gateway.reload_config()
+        web_restart = gateway.doc and (
+            gateway.doc.web.host != old_web[0] or gateway.doc.web.port != old_web[1]
+        )
+        gateway.audit.record(user, "config_yaml_edit", str(gateway.config_path))
+        msg = "YAML saved and reloaded."
+        if web_restart:
+            msg += " Restart the gateway for web host/port changes."
+        return {"ok": True, "message": msg, "web_restart_required": bool(web_restart)}
+
     @app_router.get("/modbus/devices")
     async def get_modbus_devices_config() -> list[dict[str, Any]]:
         if not gateway.doc:

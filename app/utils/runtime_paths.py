@@ -36,9 +36,14 @@ def ensure_portable_layout() -> Path:
     for rel in ("config", "data", "logs", "backup", "certificates/own", "imports"):
         (root / rel).mkdir(parents=True, exist_ok=True)
     cfg = root / "config" / "gateway.yaml"
-    bundled = bundle_dir() / "config" / "gateway.yaml"
-    if not cfg.exists() and bundled.is_file():
-        shutil.copy2(bundled, cfg)
+    bundle = bundle_dir()
+    bundled = bundle / "config" / "gateway.yaml"
+    portable_template = bundle / "examples" / "gateway.portable-service.yaml"
+    if not cfg.exists():
+        if portable_template.is_file():
+            shutil.copy2(portable_template, cfg)
+        elif bundled.is_file():
+            shutil.copy2(bundled, cfg)
     examples_src = bundle_dir() / "examples"
     examples_dst = root / "examples"
     if examples_src.is_dir() and not examples_dst.exists():

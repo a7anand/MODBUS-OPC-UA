@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Gateway settings{% endblock %}
+{% block content %}
+<h1>Gateway settings</h1>
+<p class="hint">Edits <code>config/gateway.yaml</code> on this PC. Modbus/OPC UA reload after save.
+  Changing <strong>Web host/port</strong> requires restarting the EXE or Windows service once.</p>
+<p id="access-urls" class="hint"></p>
+
+<div class="tabs">
+  <button type="button" class="tab active" data-panel="form-panel">Quick settings</button>
+  <button type="button" class="tab" data-panel="yaml-panel">Full YAML</button>
+</div>
+
+<div id="form-panel">
+  <form id="settings-form">
+    <fieldset>
+      <legend>Identity</legend>
+      <label>Gateway name <input name="gateway_name" required/></label>
+      <label>Mode <input name="gateway_mode" value="production"/></label>
+    </fieldset>
+    <fieldset>
+      <legend>Web UI (browser configuration)</legend>
+      <label><input type="checkbox" name="web_enabled" checked/> Web enabled</label>
+      <label>Bind host <input name="web_host" placeholder="127.0.0.1 or 0.0.0.0"/></label>
+      <label>HTTP port <input name="web_port" type="number" min="1" max="65535"/></label>
+      <label><input type="checkbox" name="web_remote_enabled"/> Allow LAN bind (check when using 0.0.0.0)</label>
+    </fieldset>
+    <fieldset>
+      <legend>OPC UA server</legend>
+      <label><input type="checkbox" name="opcua_server_enabled" checked/> OPC UA server enabled</label>
+      <label>Host <input name="opcua_host" placeholder="127.0.0.1"/></label>
+      <label>Port <input name="opcua_port" type="number" min="1" max="65535"/></label>
+      <label>Application name <input name="opcua_application_name"/></label>
+      <label>Security mode
+        <select name="opcua_security_mode">
+          <option value="none">none (lab)</option>
+          <option value="sign">sign</option>
+          <option value="sign_and_encrypt">sign_and_encrypt</option>
+        </select>
+      </label>
+    </fieldset>
+    <fieldset>
+      <legend>Primary Modbus PLC (TCP)</legend>
+      <p class="hint">First Modbus device in config. More devices: <a href="/devices">Devices</a>.</p>
+      <label>Device name <input name="modbus_device_name" id="modbus_device_name" readonly/></label>
+      <label>PLC IP / host <input name="modbus_host" id="modbus_host" placeholder="192.168.1.10"/></label>
+      <label>Modbus TCP port <input name="modbus_port" id="modbus_port" type="number" min="1" max="65535" value="502"/></label>
+      <button type="button" id="modbus-save">Save Modbus device</button>
+    </fieldset>
+    <fieldset>
+      <legend>Logging</legend>
+      <label>Level
+        <select name="logging_level">
+          <option>DEBUG</option><option>INFO</option><option>WARNING</option><option>ERROR</option>
+        </select>
+      </label>
+    </fieldset>
+    <button type="submit" class="primary">Save quick settings</button>
+  </form>
+  <p id="form-msg"></p>
+</div>
+
+<div id="yaml-panel" hidden>
+  <p>File: <code id="yaml-path"></code></p>
+  <textarea id="yaml-editor" rows="28" style="width:100%;font-family:monospace"></textarea>
+  <p>
+    <button type="button" id="yaml-validate">Validate YAML</button>
+    <button type="button" id="yaml-save" class="primary">Save YAML</button>
+  </p>
+  <pre id="yaml-msg"></pre>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function showTab(panelId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.panel === panelId));
+  document.getElementById('form-panel').hidden = panelId !== 'form-panel';
+  document.getElementById('yaml-panel').hidden = panelId !== 'yaml-panel';
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => showTab(b.dataset.panel));
+
+function fillForm(s) {
+  const f = document.getElementById('settings-form');
+  f.gateway_name.value = s.gateway_name || '';
+  f.gateway_mode.value = s.gateway_mode || 'production';
+  f.web_enabled.checked = s.web_enabled !== false;
+  f.web_host.value = s.web_host || '127.0.0.1';
+  f.web_port.value = s.web_port || 8080;
+  f.web_remote_enabled.checked = !!s.web_remote_enabled;
+  f.opcua_server_enabled.checked = s.opcua_server_enabled !== false;
+  f.opcua_host.value = s.opcua_host || '127.0.0.1';
+  f.opcua_port.value = s.opcua_port || 4841;
+  f.opcua_application_name.value = s.opcua_application_name || '';
+  f.opcua_security_mode.value = s.opcua_security_mode || 'none';
+  f.logging_level.value = s.logging_level || 'INFO';
+}
+
+function showAccessUrls(s) {
+  const host = (s.web_host || '127.0.0.1').trim();
+  const port = s.web_port || 8080;
+  const displayHost = host === '0.0.0.0' ? window.location.hostname || '127.0.0.1' : host;
+  const opc = `opc.tcp://${s.opcua_host || '127.0.0.1'}:${s.opcua_port || 4841}/`;
+  document.getElementById('access-urls').innerHTML =
+    `Web UI: <a href="http://${displayHost}:${port}/settings">http://${displayHost}:${port}/settings</a> · ` +
+    `OPC UA endpoint (after save): <code>${opc}</code>`;
+}
+
+async function loadSettings() {
+  const s = await apiGet('/api/config/settings');
+  fillForm(s);
+  showAccessUrls(s);
+}
+async function loadYaml() {
+  const y = await apiGet('/api/config/yaml');
+  document.getElementById('yaml-path').textContent = y.path || '';
+  document.getElementById('yaml-editor').value = y.content || '';
+}
+
+document.getElementById('settings-form').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  const body = {
+    gateway_name: f.gateway_name.value,
+    gateway_mode: f.gateway_mode.value,
+    web_enabled: f.web_enabled.checked,
+    web_host: f.web_host.value.trim(),
+    web_port: +f.web_port.value,
+    web_remote_enabled: f.web_remote_enabled.checked,
+    opcua_server_enabled: f.opcua_server_enabled.checked,
+    opcua_host: f.opcua_host.value.trim(),
+    opcua_port: +f.opcua_port.value,
+    opcua_application_name: f.opcua_application_name.value,
+    opcua_security_mode: f.opcua_security_mode.value,
+    logging_level: f.logging_level.value,
+  };
+  const msg = document.getElementById('form-msg');
+  try {
+    const r = await apiPut('/api/config/settings', body);
+    msg.textContent = r.message || 'Saved.';
+    msg.style.color = r.web_restart_required ? '#b45309' : 'green';
+    await loadYaml();
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.style.color = 'crimson';
+  }
+};
+
+document.getElementById('yaml-validate').onclick = async () => {
+  const pre = document.getElementById('yaml-msg');
+  const content = document.getElementById('yaml-editor').value;
+  const r = await apiPost('/api/config/yaml/validate', { content });
+  pre.textContent = r.valid ? 'Valid configuration.' : (r.error || 'Invalid');
+  pre.style.color = r.valid ? 'green' : 'crimson';
+};
+
+document.getElementById('yaml-save').onclick = async () => {
+  const pre = document.getElementById('yaml-msg');
+  try {
+    const r = await apiPut('/api/config/yaml', { content: document.getElementById('yaml-editor').value });
+    pre.textContent = r.message || 'YAML saved.';
+    pre.style.color = r.web_restart_required ? '#b45309' : 'green';
+    await loadSettings();
+  } catch (err) {
+    pre.textContent = err.message;
+    pre.style.color = 'crimson';
+  }
+};
+
+async function loadModbusDevice() {
+  const devs = await apiGet('/api/config/modbus/devices');
+  if (!devs.length) return;
+  const d = devs[0];
+  document.getElementById('modbus_device_name').value = d.name || '';
+  document.getElementById('modbus_host').value = d.host || '127.0.0.1';
+  document.getElementById('modbus_port').value = d.port || 502;
+  document.getElementById('modbus-save').onclick = async () => {
+    const name = document.getElementById('modbus_device_name').value;
+    d.host = document.getElementById('modbus_host').value.trim();
+    d.port = +document.getElementById('modbus_port').value;
+    await apiPut('/api/config/modbus/devices/' + encodeURIComponent(name), d);
+    document.getElementById('form-msg').textContent = 'Modbus device saved and reloaded.';
+    document.getElementById('form-msg').style.color = 'green';
+    await loadYaml();
+  };
+}
+
+loadSettings();
+loadYaml();
+loadModbusDevice();
+</script>
+{% endblock %}

@@ -15,9 +15,12 @@ python -m app --validate --config config\gateway.yaml
 python -m app --run --config config\gateway.yaml
 ```
 
-- Web: `http://127.0.0.1:8080`
+- Web: `http://127.0.0.1:8080` — configure at **`/settings`** (name, IPs, OPC UA port, full YAML)
+- **Portable EXE (other PCs, no Python):** `scripts\package_release.bat` → see [docs/PORTABLE_SERVICE_DEPLOY.md](docs/PORTABLE_SERVICE_DEPLOY.md)
 - OPC UA: `opc.tcp://localhost:4840` (see config)
 - API: `/api/status`, `/api/tags`, OpenAPI at `/docs`
+- Portable EXE (background + browser config): [docs/PORTABLE_SERVICE_DEPLOY.md](docs/PORTABLE_SERVICE_DEPLOY.md)
+- Portable EXE (background + browser config): [docs/PORTABLE_SERVICE_DEPLOY.md](docs/PORTABLE_SERVICE_DEPLOY.md)
 
 GUI (optional): `pip install -e ".[gui]"` then `python -m app --gui` (V3) or `--gui-v2` (frozen). See **[docs/VERSIONING_GUIDE.md](docs/VERSIONING_GUIDE.md)** (all versions & run modes), [docs/DESKTOP_GUI_MANUAL.md](docs/DESKTOP_GUI_MANUAL.md), and [docs/V3_ROADMAP.md](docs/V3_ROADMAP.md).
 

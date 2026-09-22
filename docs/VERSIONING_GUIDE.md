@@ -2,7 +2,7 @@
 
 This document explains **product releases**, **desktop GUI lines**, **how to run each mode**, and **what features appear in which version**.
 
-**Current product version:** `3.2.0` (`app/version.py`, `python -m app --version`)
+**Current product version:** `3.2.1` (`app/version.py`, `python -m app --version`)
 
 **Active development branch:** `Version3`  
 **Git tags (milestones):** `v2.0.0`, `v3.0.0`, `v3.0.1`, `v3.2.0`

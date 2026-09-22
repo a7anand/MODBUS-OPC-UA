@@ -33,7 +33,7 @@ if (-not (Test-Path $Exe)) {
     Write-Error "ModbusOPCUAGateway.exe not found in $InstallDir"
 }
 
-$Args = "--run --portable --config config\gateway.yaml"
+$Args = "--headless --config config\gateway.yaml"
 $LogDir = Join-Path $InstallDir "logs"
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 

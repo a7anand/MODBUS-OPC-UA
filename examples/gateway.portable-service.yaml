@@ -1,0 +1,33 @@
+# Copy to config/gateway.yaml beside ModbusOPCUAGateway.exe on a remote PC.
+# Edit further in browser: http://<this-pc-ip>:8080/settings
+
+gateway:
+  name: SITE-GATEWAY-01
+  mode: production
+web:
+  enabled: true
+  host: 0.0.0.0
+  port: 8080
+  remote_enabled: true
+logging:
+  level: INFO
+poll_groups:
+  - id: default
+    interval_ms: 1000
+modbus:
+  devices:
+    - name: PLC1
+      mode: tcp_client
+      enabled: true
+      host: 192.168.1.10
+      port: 502
+      unit_id: 1
+opcua:
+  server:
+    enabled: true
+    endpoint: opc.tcp://0.0.0.0:4841/
+    application_name: Modbus OPC UA Gateway
+    security_mode: none
+  clients: []
+tags: []
+mappings: []

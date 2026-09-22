@@ -3,13 +3,16 @@
 
 from __future__ import annotations
 
+import re
+from typing import Any
+
 from app.core.config_schema import (
     GatewayDocument,
     ModbusDeviceConfig,
     PollGroupConfig,
     TagDefinition,
 )
-from app.core.enums import ModbusDeviceMode
+from app.core.enums import ModbusDeviceMode, OpcUaSecurityMode
 
 
 class ConfigEditorError(Exception):
@@ -148,3 +151,66 @@ def merge_imported_tags(
     doc.tags = list(by_name.values())
     doc = GatewayDocument.model_validate(doc.model_dump(mode="json"))
     return doc, {"added": added, "updated": updated, "skipped": skipped, "errors": errors}
+
+
+_ENDPOINT_RE = re.compile(r"^opc\.tcp://([^:/]+):(\d+)(?:/)?$", re.IGNORECASE)
+
+
+def parse_opcua_endpoint(endpoint: str) -> tuple[str, int]:
+    m = _ENDPOINT_RE.match(endpoint.strip())
+    if not m:
+        raise ConfigEditorError(
+            "opcua endpoint must look like opc.tcp://192.168.1.10:4841/"
+        )
+    return m.group(1), int(m.group(2))
+
+
+def settings_to_dict(doc: GatewayDocument) -> dict[str, Any]:
+    host, port = parse_opcua_endpoint(doc.opcua.server.endpoint)
+    return {
+        "gateway_name": doc.gateway.name,
+        "gateway_mode": doc.gateway.mode,
+        "web_enabled": doc.web.enabled,
+        "web_host": doc.web.host,
+        "web_port": doc.web.port,
+        "web_remote_enabled": doc.web.remote_enabled,
+        "opcua_server_enabled": doc.opcua.server.enabled,
+        "opcua_host": host,
+        "opcua_port": port,
+        "opcua_endpoint": doc.opcua.server.endpoint,
+        "opcua_application_name": doc.opcua.server.application_name,
+        "opcua_security_mode": doc.opcua.server.security_mode.value,
+        "logging_level": doc.logging.level,
+    }
+
+
+def apply_settings(doc: GatewayDocument, data: dict[str, Any]) -> tuple[GatewayDocument, bool]:
+    """Apply browser-editable gateway settings. Returns (doc, web_restart_required)."""
+    web_restart = (
+        doc.web.host != data["web_host"].strip()
+        or doc.web.port != int(data["web_port"])
+    )
+    opc_host = data.get("opcua_host") or data.get("opcua_host", "127.0.0.1")
+    opc_port = int(data.get("opcua_port", 4841))
+    if "opcua_endpoint" in data and data["opcua_endpoint"]:
+        opc_host, opc_port = parse_opcua_endpoint(str(data["opcua_endpoint"]))
+
+    doc.gateway.name = str(data["gateway_name"]).strip()
+    doc.gateway.mode = str(data.get("gateway_mode", doc.gateway.mode))
+    doc.web.enabled = bool(data.get("web_enabled", doc.web.enabled))
+    doc.web.host = str(data["web_host"]).strip()
+    doc.web.port = int(data["web_port"])
+    doc.web.remote_enabled = bool(data.get("web_remote_enabled", False))
+    doc.logging.level = str(data.get("logging_level", doc.logging.level))
+    doc.opcua.server.enabled = bool(data.get("opcua_server_enabled", True))
+    doc.opcua.server.endpoint = f"opc.tcp://{opc_host}:{opc_port}/"
+    doc.opcua.server.application_name = str(
+        data.get("opcua_application_name", doc.opcua.server.application_name)
+    )
+    mode = str(data.get("opcua_security_mode", doc.opcua.server.security_mode.value))
+    try:
+        doc.opcua.server.security_mode = OpcUaSecurityMode(mode)
+    except ValueError as exc:
+        raise ConfigEditorError(f"Invalid opcua_security_mode: {mode}") from exc
+    validated = GatewayDocument.model_validate(doc.model_dump(mode="json"))
+    return validated, web_restart

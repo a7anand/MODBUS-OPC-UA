@@ -146,6 +146,10 @@ def create_app(gateway: Gateway) -> FastAPI:
     async def page_backup(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(request, "backup.html", {})
 
+    @app.get("/settings", response_class=HTMLResponse)
+    async def page_settings(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "settings.html", {})
+
     @app.get("/simulator", response_class=HTMLResponse)
     async def page_simulator(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(request, "simulator.html", {})

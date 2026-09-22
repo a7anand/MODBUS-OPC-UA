@@ -47,6 +47,25 @@ class TagDefinitionBody(BaseModel):
     word_order: str = "big"
 
 
+class GatewaySettingsBody(BaseModel):
+    gateway_name: str = Field(min_length=1)
+    gateway_mode: str = "production"
+    web_enabled: bool = True
+    web_host: str = "127.0.0.1"
+    web_port: int = Field(default=8080, ge=1, le=65535)
+    web_remote_enabled: bool = False
+    opcua_server_enabled: bool = True
+    opcua_host: str = "127.0.0.1"
+    opcua_port: int = Field(default=4841, ge=1, le=65535)
+    opcua_application_name: str = "Modbus OPC UA Gateway"
+    opcua_security_mode: str = "none"
+    logging_level: str = "INFO"
+
+
+class YamlDocumentBody(BaseModel):
+    content: str = Field(min_length=1)
+
+
 class ImportTextBody(BaseModel):
     content: str = ""
     replace_existing: bool = False

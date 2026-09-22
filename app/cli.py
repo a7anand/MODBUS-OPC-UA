@@ -37,6 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--validate", action="store_true", help="Validate configuration and exit")
     parser.add_argument("--run", action="store_true", help="Run gateway (headless)")
     parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Background gateway + Web UI (no PyQt, no browser): --run --portable",
+    )
+    parser.add_argument(
         "--gui",
         action="store_true",
         help="Run PyQt v3 engineering workstation GUI (default)",
@@ -57,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--browser",
         action="store_true",
-        help="Open default web browser to the dashboard (used by portable EXE)",
+        help="Open default web browser to the dashboard",
     )
     return parser
 
@@ -65,9 +70,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     # Double-click portable EXE: run gateway + web UI beside the executable.
     if argv is None and is_frozen() and len(sys.argv) <= 1:
-        argv = ["--run", "--portable", "--browser"]
+        argv = ["--headless"]
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.headless:
+        args.run = True
+        args.portable = True
+        args.browser = False
     if is_frozen():
         os.chdir(app_root())
     if args.portable or (is_frozen() and args.run):

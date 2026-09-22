@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.2.1 (2026-09-21)
+
+- Portable **headless** EXE default (`--headless`), `START_BACKGROUND.bat`, service installer uses headless
+- Web **Settings** page (`/settings`): quick form + full YAML editor; `POST /api/config/yaml/validate`
+- [PORTABLE_SERVICE_DEPLOY.md](docs/PORTABLE_SERVICE_DEPLOY.md)
+
 ## 3.2.0 (2026-09-21)
 
 - OPC UA Sign/SignAndEncrypt policy matrix, server username auth, cert rotation API + Web UX

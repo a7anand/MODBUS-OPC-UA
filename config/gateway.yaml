@@ -47,6 +47,8 @@ opcua:
     security_mode: none
     certificate_path: null
     private_key_path: null
+    username_password_auth: false
+    server_users: []
   clients: []
 tags:
 - name: th2
@@ -70,7 +72,7 @@ tags:
   opcua_node: s=SIm2/th2
   direction: mb_to_ua
   poll_interval_ms: null
-  poll_group: fast
+  poll_group: default
   deadband: 0.0
   writable: true
   area: holding_register
@@ -99,7 +101,7 @@ tags:
   poll_interval_ms: null
   poll_group: default
   deadband: 0.0
-  writable: false
+  writable: true
   area: holding_register
   address_internal: 1
   address_display: 40002

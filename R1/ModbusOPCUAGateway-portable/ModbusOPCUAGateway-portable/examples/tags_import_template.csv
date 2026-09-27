@@ -1,0 +1,3 @@
+TagName,Description,Device,Protocol,UnitID,Function,Address,RegisterCount,Datatype,ByteOrder,WordOrder,Gain,Offset,EngineeringUnit,OPCUANode,Direction,PollInterval,Enabled
+tank_level,Tank level,PLC01,MODBUS_TCP,1,3,40001,1,uint16,ABCD,big,1,0,%,s=PLC01/tank_level,mb_to_ua,1000,true
+pump_run,Pump status,PLC01,MODBUS_TCP,1,1,1,1,bool,ABCD,big,1,0,,s=PLC01/pump_run,mb_to_ua,1000,true

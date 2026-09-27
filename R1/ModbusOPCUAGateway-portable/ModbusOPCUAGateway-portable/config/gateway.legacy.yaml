@@ -1,0 +1,61 @@
+# Legacy poller package (gateway/) — do not use with app/ Core
+opcua:
+  endpoint_host: "0.0.0.0"
+  endpoint_port: 4840
+  application_name: "AA Modbus OPC UA Gateway"
+  application_uri: "urn:aa-modbus-ua:gateway"
+  product_uri: "urn:aa-modbus-ua:product"
+  namespace_uri: "urn:aa-modbus-ua:tags"
+  security_mode: none
+health:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8091
+logging:
+  level: INFO
+poll_groups:
+  - id: fast
+    interval_ms: 500
+  - id: slow
+    interval_ms: 2000
+modbus_connections:
+  - id: sim_plant
+    transport: simulator
+tags:
+  - id: boiler_temp
+    connection_id: sim_plant
+    device_name: BoilerHouse
+    unit_id: 1
+    modbus_address: 40001
+    data_type: int16
+    scale: 0.01
+    engineering_units: "°C"
+    description: "Boiler outlet temperature (simulated)"
+    poll_group: fast
+    writable: false
+  - id: boiler_pressure
+    connection_id: sim_plant
+    device_name: BoilerHouse
+    unit_id: 1
+    modbus_address: 40002
+    data_type: uint16
+    description: "Boiler pressure (simulated)"
+    poll_group: fast
+  - id: pump_running
+    connection_id: sim_plant
+    device_name: BoilerHouse
+    unit_id: 1
+    modbus_address: 1
+    data_type: bool
+    description: "Circulation pump status"
+    poll_group: slow
+  - id: feedwater_sp
+    connection_id: sim_plant
+    device_name: BoilerHouse
+    unit_id: 1
+    modbus_address: 40010
+    data_type: int16
+    scale: 0.1
+    description: "Feedwater setpoint — writable holding register"
+    poll_group: fast
+    writable: true

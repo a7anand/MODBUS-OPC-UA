@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Callable
 
 from app.core.datatype_engine import decode_tag_value, encode_tag_value
 from app.core.addressing import function_to_area
-from app.core.enums import RegisterArea, TagQuality
+from app.core.enums import DataType, RegisterArea, TagQuality
 from app.core.mapping_engine import MappingEngine
 from app.core.poll_batch import ReadBatch, plan_read_batches
 from app.core.tag_database import TagDatabase
@@ -267,8 +267,22 @@ class PollScheduler:
         if rec is None or not rec.definition.writable:
             return False
         area = rec.definition.area or function_to_area(rec.definition.function)
-        regs = encode_tag_value(value, rec.definition)
         device = self._modbus.get(rec.definition.device)
+        defs = rec.definition
+        if (
+            defs.datatype == DataType.BOOL
+            and defs.bit_index is not None
+            and area == RegisterArea.HOLDING_REGISTER
+        ):
+            from app.core.register_bit_decode import set_bit
+
+            read_res = await device.read(
+                defs.unit_id, area, rec.address_internal, 1
+            )
+            cur = read_res.registers[0] if read_res.ok and read_res.registers else 0
+            regs = [set_bit(cur, defs.bit_index, bool(value))]
+        else:
+            regs = encode_tag_value(value, rec.definition)
         result = await device.write(
             rec.definition.unit_id, area, rec.address_internal, regs
         )

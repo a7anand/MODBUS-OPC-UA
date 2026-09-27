@@ -9,6 +9,7 @@ from typing import Any
 from app.core.enums import ByteLayout, DataType, WordOrder
 from app.core.scaling_engine import scale_to_engineering, scale_to_raw
 from app.core.config_schema import TagDefinition
+from app.core.register_bit_decode import set_bit
 
 
 def _swap16(value: int) -> int:
@@ -43,10 +44,17 @@ def _normalize_registers(
     return raw
 
 
+def _bool_bit_index(tag: TagDefinition) -> int:
+    return tag.bit_index if tag.bit_index is not None else 0
+
+
 def decode_registers(registers: list[int], tag: TagDefinition) -> Any:
     dt = tag.datatype
     if dt == DataType.BOOL:
-        return bool(registers[0] & 1) if registers else False
+        if not registers:
+            return False
+        bit = _bool_bit_index(tag)
+        return bool((registers[0] >> bit) & 1)
     raw = _normalize_registers(registers, tag.byte_order, tag.word_order)
     if dt == DataType.INT16:
         raw_val = struct.unpack(">h", raw[:2])[0]
@@ -76,7 +84,12 @@ def decode_registers(registers: list[int], tag: TagDefinition) -> Any:
 def encode_registers(value: Any, tag: TagDefinition) -> list[int]:
     dt = tag.datatype
     if dt == DataType.BOOL:
-        return [1 if bool(value) else 0]
+        bit = _bool_bit_index(tag)
+        if bit == 0 and tag.bit_index is None:
+            return [1 if bool(value) else 0]
+        word = 0
+        return [set_bit(word, bit, bool(value))]
+
     if dt == DataType.STRING:
         raw = str(value).encode("utf-8")
         need = tag.register_count * 2

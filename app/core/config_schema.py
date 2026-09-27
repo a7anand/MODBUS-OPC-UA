@@ -159,6 +159,12 @@ class TagDefinition(BaseModel):
     poll_group: str = "default"
     deadband: float = 0.0
     writable: bool = False
+    bit_index: int | None = Field(
+        default=None,
+        ge=0,
+        le=15,
+        description="For bool tags in a holding register: bit 0–15 (4X:n.b)",
+    )
     area: RegisterArea | None = None
     address_internal: int | None = None
     address_display: int | None = None
@@ -167,6 +173,8 @@ class TagDefinition(BaseModel):
     def _defaults(self) -> TagDefinition:
         if not self.opcua_node:
             self.opcua_node = f"s={self.device}/{self.name}"
+        if self.bit_index is not None and self.datatype != DataType.BOOL:
+            raise ValueError(f"bit_index only allowed for bool tags ({self.name})")
         return self
 
 

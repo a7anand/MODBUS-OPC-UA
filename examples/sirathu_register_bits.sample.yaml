@@ -1,0 +1,33 @@
+# Sample: Sirathu SV 192.168.173.110 — holding 4X:11 (40012) discrete inputs
+# Use Web → Register bits → four_x 4X:11, prefix DI_, map bits 0–7 per your PLC sheet.
+
+gateway:
+  name: SIRATHU-SV-GW
+  mode: production
+modbus:
+  devices:
+    - name: Sirathu_SV
+      mode: tcp_client
+      host: 192.168.173.110
+      port: 502
+      unit_id: 1
+      enabled: true
+poll_groups:
+  - id: default
+    interval_ms: 1000
+tags:
+  - name: DI_0
+    device: Sirathu_SV
+    function: 3
+    address: 40012
+    datatype: bool
+    bit_index: 0
+    description: MOV L/R
+  - name: DI_1
+    device: Sirathu_SV
+    function: 3
+    address: 40012
+    datatype: bool
+    bit_index: 1
+    description: MOV OPEN FB
+mappings: []

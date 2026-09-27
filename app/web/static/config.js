@@ -68,6 +68,7 @@ function tagBodyFromForm(f) {
     poll_group: f.poll_group.value,
     enabled: f.enabled ? f.enabled.checked : true,
     writable: f.writable ? f.writable.checked : false,
+    bit_index: f.bit_index && f.bit_index.value !== '' ? parseInt(f.bit_index.value, 10) : null,
   };
 }
 
@@ -181,7 +182,8 @@ async function loadTagDefinitions() {
     tr.dataset.tagName = t.name;
     tr.innerHTML =
       '<td>' + t.name + '</td><td>' + t.device + '</td><td>' + (t.address_display || t.address) +
-      '</td><td>' + t.datatype + '</td><td class="live-value">' + (lv.value ?? '') +
+      '</td><td>' + t.datatype + (t.bit_index != null ? ' @b' + t.bit_index : '') +
+      '</td><td class="live-value">' + (lv.value ?? '') +
       '</td><td class="live-quality">' + (lv.quality ?? '') + '</td>' +
       '<td><button type="button" data-edit="' + t.name + '">Edit</button> ' +
       '<button type="button" data-del="' + t.name + '">Delete</button></td>';
@@ -222,6 +224,7 @@ function openTagEditor(tagName, defs) {
   f.address.value = t.address_display || t.address;
   f.register_count.value = t.register_count;
   f.datatype.value = t.datatype;
+  if (f.bit_index) f.bit_index.value = t.bit_index != null ? t.bit_index : '';
   f.gain.value = t.gain;
   f.offset.value = t.offset;
   f.engineering_unit.value = t.engineering_unit || '';

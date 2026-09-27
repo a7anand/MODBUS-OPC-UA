@@ -45,6 +45,34 @@ class TagDefinitionBody(BaseModel):
     writable: bool = False
     byte_order: str = "ABCD"
     word_order: str = "big"
+    bit_index: int | None = Field(default=None, ge=0, le=15)
+
+
+class RegisterBitPreviewBody(BaseModel):
+    device: str
+    unit_id: int = 1
+    address: int | None = None
+    four_x: str | None = Field(
+        default=None,
+        description="e.g. 4X:11 or 40012",
+    )
+
+
+class RegisterBitItem(BaseModel):
+    bit: int = Field(ge=0, le=15)
+    name: str = Field(min_length=1)
+    description: str = ""
+    writable: bool = False
+
+
+class RegisterBitExpandBody(BaseModel):
+    device: str
+    unit_id: int = 1
+    address: int | None = None
+    four_x: str | None = None
+    name_prefix: str = ""
+    poll_group: str = "default"
+    bits: list[RegisterBitItem]
 
 
 class GatewaySettingsBody(BaseModel):

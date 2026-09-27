@@ -16,8 +16,16 @@ from app.api.models_config import (
     ModbusDeviceBody,
     PollGroupBody,
     PollGroupIntervalBody,
+    RegisterBitExpandBody,
+    RegisterBitPreviewBody,
     TagDefinitionBody,
     YamlDocumentBody,
+)
+from app.core.enums import RegisterArea
+from app.core.register_bit_decode import (
+    build_bool_tag,
+    parse_four_x_address,
+    preview_register_bits,
 )
 from app.core.config_editor import (
     ConfigEditorError,
@@ -70,6 +78,7 @@ def _tag_from_body(body: TagDefinitionBody) -> TagDefinition:
         poll_group=body.poll_group,
         enabled=body.enabled,
         writable=body.writable,
+        bit_index=body.bit_index,
     )
 
 
@@ -222,6 +231,86 @@ def register_config_routes(
             raise HTTPException(400, str(exc)) from exc
         await gateway.persist_document(doc, user=user, description=f"remove device {device_name}")
         return {"ok": True}
+
+    def _resolve_holding_address(
+        body: RegisterBitPreviewBody | RegisterBitExpandBody,
+    ) -> int:
+        if body.four_x:
+            plc, _bit = parse_four_x_address(body.four_x)
+            return plc
+        if body.address is None:
+            raise HTTPException(400, "address or four_x required")
+        return body.address
+
+    @app_router.post("/tags/register-bits/preview")
+    async def preview_holding_register_bits(
+        body: RegisterBitPreviewBody,
+    ) -> dict[str, Any]:
+        if not gateway.modbus_diag:
+            raise HTTPException(503, "Gateway not ready")
+        plc = _resolve_holding_address(body)
+        dev = gateway.doc and next(
+            (d for d in gateway.doc.modbus.devices if d.name == body.device), None
+        )
+        if dev is None:
+            raise HTTPException(404, "Device not found")
+        from app.core.addressing import external_to_internal, function_to_area
+        from app.core.enums import ModbusFunction
+
+        area = RegisterArea.HOLDING_REGISTER
+        internal, display = external_to_internal(
+            plc, dev.address_base, function_to_area(ModbusFunction.READ_HOLDING)
+        )
+        result = await gateway.modbus_diag.read(
+            body.device, body.unit_id, area, internal, 1
+        )
+        if not result.get("ok"):
+            raise HTTPException(502, result.get("error") or "Modbus read failed")
+        regs = result.get("registers") or [0]
+        word = regs[0]
+        four_x = display - 40001 if display >= 40001 else internal
+        return {
+            "device": body.device,
+            "plc_address": display,
+            "four_x": f"4X:{four_x}",
+            "register_value": word,
+            "hex": f"{word:04X}",
+            "bits": preview_register_bits(word),
+        }
+
+    @app_router.post("/tags/register-bits/expand")
+    async def expand_register_bits_to_tags(
+        body: RegisterBitExpandBody, user: str = Depends(session_dep)
+    ) -> dict[str, Any]:
+        if gateway.authz and not gateway.authz.can_write(user):
+            raise HTTPException(403, "Forbidden")
+        if not gateway.doc:
+            raise HTTPException(503, "Gateway not loaded")
+        plc = _resolve_holding_address(body)
+        doc = gateway.doc.model_copy(deep=True)
+        created: list[str] = []
+        for item in body.bits:
+            tag_name = item.name.strip()
+            if body.name_prefix and not tag_name.startswith(body.name_prefix):
+                tag_name = f"{body.name_prefix}{tag_name}"
+            tag = build_bool_tag(
+                tag_name,
+                body.device,
+                plc,
+                item.bit,
+                description=item.description,
+                writable=item.writable,
+                poll_group=body.poll_group,
+            )
+            try:
+                doc = add_tag(doc, tag)
+            except ConfigEditorError as exc:
+                raise HTTPException(400, str(exc)) from exc
+            created.append(tag.name)
+        await gateway.persist_document(
+            doc, user=user, description=f"register bit expand {body.four_x or plc}"
+        )
+        return {"ok": True, "created": created, "count": len(created)}
 
     @app_router.get("/tags/definitions")
     async def get_tag_definitions() -> list[dict[str, Any]]:

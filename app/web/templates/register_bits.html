@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Holding register bits{% endblock %}
+{% block content %}
+<h1>Holding register → boolean tags</h1>
+<p class="hint">Map one 16-bit holding register (4X) into individual <code>bool</code> tags — e.g. <code>4X:11.0</code> … <code>4X:11.15</code> like Sirathu/Khaga SV DI/DOM words.</p>
+
+<form id="read-form" class="form-grid">
+  <label>Device <input name="device" id="device" list="device-names" required/></label>
+  <datalist id="device-names"></datalist>
+  <label>Unit ID <input name="unit_id" type="number" value="1" min="0" max="247"/></label>
+  <label>4X register <input name="four_x" placeholder="4X:11 or 40012" required/></label>
+  <button type="submit">Read &amp; decode</button>
+</form>
+
+<p id="summary"></p>
+<table id="bit-table"><thead><tr>
+  <th>Bit</th><th>4X</th><th>Value</th><th>Tag name</th><th>Description</th><th>Writable</th><th>Create</th>
+</tr></thead><tbody></tbody></table>
+
+<p>
+  <label>Name prefix <input id="prefix" placeholder="DI_"/></label>
+  <label>Poll group <input id="poll_group" value="default"/></label>
+  <button type="button" id="create-selected" class="primary">Create selected tags</button>
+</p>
+<p id="msg"></p>
+{% endblock %}
+{% block scripts %}
+<script>
+loadDeviceNames('device-names');
+let lastPreview = null;
+
+document.getElementById('read-form').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  const body = {
+    device: f.device.value.trim(),
+    unit_id: +f.unit_id.value,
+    four_x: f.four_x.value.trim(),
+  };
+  try {
+    lastPreview = await apiPost('/api/config/tags/register-bits/preview', body);
+    document.getElementById('summary').textContent =
+      `${lastPreview.four_x} @ ${lastPreview.device} = 0x${lastPreview.hex} (${lastPreview.register_value}) PLC ${lastPreview.plc_address}`;
+    const tb = document.querySelector('#bit-table tbody');
+    tb.innerHTML = '';
+    const reg = lastPreview.four_x.replace('4X:', '');
+    lastPreview.bits.forEach(b => {
+      const tr = document.createElement('tr');
+      const defName = `bit${b.bit}`;
+      tr.innerHTML = `<td>${b.bit}</td><td>4X:${reg}.${b.bit}</td><td>${b.value ? '1' : '0'}</td>` +
+        `<td><input class="tag-name" value="${defName}"/></td>` +
+        `<td><input class="tag-desc"/></td>` +
+        `<td><input type="checkbox" class="tag-wr"/></td>` +
+        `<td><input type="checkbox" class="tag-sel" checked/></td>`;
+      tb.appendChild(tr);
+    });
+  } catch (err) {
+    showMsg(err.message, true);
+  }
+};
+
+document.getElementById('create-selected').onclick = async () => {
+  if (!lastPreview) { showMsg('Read a register first.', true); return; }
+  const bits = [];
+  document.querySelectorAll('#bit-table tbody tr').forEach(tr => {
+    if (!tr.querySelector('.tag-sel').checked) return;
+    bits.push({
+      bit: +tr.cells[0].textContent,
+      name: tr.querySelector('.tag-name').value.trim(),
+      description: tr.querySelector('.tag-desc').value.trim(),
+      writable: tr.querySelector('.tag-wr').checked,
+    });
+  });
+  if (!bits.length) { showMsg('Select at least one bit.', true); return; }
+  const body = {
+    device: lastPreview.device,
+    four_x: lastPreview.four_x,
+    name_prefix: document.getElementById('prefix').value.trim(),
+    poll_group: document.getElementById('poll_group').value.trim() || 'default',
+    bits,
+  };
+  try {
+    const r = await apiPost('/api/config/tags/register-bits/expand', body);
+    showMsg(`Created ${r.count} tag(s): ${r.created.join(', ')}`);
+  } catch (err) { showMsg(err.message, true); }
+};
+</script>
+{% endblock %}

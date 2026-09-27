@@ -93,6 +93,10 @@ def create_app(gateway: Gateway) -> FastAPI:
     async def page_tags(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(request, "tags.html", {})
 
+    @app.get("/register-bits", response_class=HTMLResponse)
+    async def page_register_bits(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(request, "register_bits.html", {})
+
     @app.get("/devices", response_class=HTMLResponse)
     async def page_devices(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(request, "devices.html", {})
